@@ -83,6 +83,7 @@ model Article {
   user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   quizzes Quiz[]
 
+  @@unique([userId, url])
   @@map("articles")
 }
 
