@@ -15,7 +15,8 @@ model User {
   email            String?   @unique
   emailVerified    DateTime? @map("email_verified")
   image            String?
-  pushSubscription Json?     @map("push_subscription")
+  pushSubscription    Json?     @map("push_subscription")
+  bookmarkletToken    String?   @unique @map("bookmarklet_token")
   createdAt        DateTime  @default(now()) @map("created_at")
 
   accounts    Account[]

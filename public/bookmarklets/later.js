@@ -1,29 +1,22 @@
 (async () => {
-  const APP_URL = "REPLACED_AT_RENDER_TIME";
-
-  const url = location.href;
-  const title = document.title;
   const ogpImage =
     document.querySelector('meta[property="og:image"]')?.getAttribute("content") ?? null;
-
-  const res = await fetch(`${APP_URL}/api/articles`, {
+  const res = await fetch("__APP_URL__/api/articles", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({ url, title, ogpImage }),
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer __TOKEN__",
+    },
+    body: JSON.stringify({ url: location.href, title: document.title, ogpImage }),
   });
-
   if (res.status === 401) {
-    alert("ログインしてください");
-    window.open(APP_URL, "_blank");
+    alert("トークンが無効です。ブックマークレットを再設定してください");
     return;
   }
-
   const data = await res.json();
   if (!res.ok) {
     alert(data.error ?? "エラーが発生しました");
     return;
   }
-
   alert("あとで読むに追加しました！");
 })();

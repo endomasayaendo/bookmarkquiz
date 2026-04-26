@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getBookmarkletUserId } from "@/lib/bookmarklet-auth";
+import { CORS_HEADERS, corsPreflightResponse } from "@/lib/cors";
 import * as cheerio from "cheerio";
 
 const ALLOWED_DOMAINS = ["qiita.com", "zenn.dev"];
@@ -22,34 +24,39 @@ async function fetchBodyText(url: string): Promise<string> {
   return $("body").text().replace(/\s+/g, " ").trim().slice(0, 20000);
 }
 
+export function OPTIONS() {
+  return corsPreflightResponse();
+}
+
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = session?.user?.id ?? (await getBookmarkletUserId(req));
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: CORS_HEADERS });
   }
 
   const { url, title, ogpImage } = await req.json();
   if (!url || !title) {
-    return NextResponse.json({ error: "url and title are required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "url and title are required" },
+      { status: 400, headers: CORS_HEADERS }
+    );
   }
 
   if (!isAllowedDomain(url)) {
-    return NextResponse.json({ error: "このサイトは対応していません" }, { status: 400 });
+    return NextResponse.json(
+      { error: "このサイトは対応していません" },
+      { status: 400, headers: CORS_HEADERS }
+    );
   }
 
   const bodyText = await fetchBodyText(url);
 
   const article = await prisma.article.upsert({
-    where: {
-      userId_url: { userId: session.user.id, url },
-    },
-    update: {
-      status: "done",
-      readAt: new Date(),
-      bodyText,
-    },
+    where: { userId_url: { userId, url } },
+    update: { status: "done", readAt: new Date(), bodyText },
     create: {
-      userId: session.user.id,
+      userId,
       url,
       title,
       ogpImage: ogpImage ?? null,
@@ -59,5 +66,5 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json(article);
+  return NextResponse.json(article, { headers: CORS_HEADERS });
 }

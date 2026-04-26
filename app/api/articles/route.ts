@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getBookmarkletUserId } from "@/lib/bookmarklet-auth";
+import { CORS_HEADERS, corsPreflightResponse } from "@/lib/cors";
 
 const ALLOWED_DOMAINS = ["qiita.com", "zenn.dev"];
 
@@ -13,31 +15,37 @@ function isAllowedDomain(url: string): boolean {
   }
 }
 
+export function OPTIONS() {
+  return corsPreflightResponse();
+}
+
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = session?.user?.id ?? (await getBookmarkletUserId(req));
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: CORS_HEADERS });
   }
 
   const { url, title, ogpImage } = await req.json();
   if (!url || !title) {
-    return NextResponse.json({ error: "url and title are required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "url and title are required" },
+      { status: 400, headers: CORS_HEADERS }
+    );
   }
 
   if (!isAllowedDomain(url)) {
-    return NextResponse.json({ error: "このサイトは対応していません" }, { status: 400 });
+    return NextResponse.json(
+      { error: "このサイトは対応していません" },
+      { status: 400, headers: CORS_HEADERS }
+    );
   }
 
   const article = await prisma.article.create({
-    data: {
-      userId: session.user.id,
-      url,
-      title,
-      ogpImage: ogpImage ?? null,
-    },
+    data: { userId, url, title, ogpImage: ogpImage ?? null },
   });
 
-  return NextResponse.json(article, { status: 201 });
+  return NextResponse.json(article, { status: 201, headers: CORS_HEADERS });
 }
 
 export async function GET(req: NextRequest) {
