@@ -21,7 +21,7 @@ export default function DashboardClient({ unreadCount, doneCount }: Props) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md">
-        <h1 className="mb-8 text-2xl font-bold">ダッシュボード</h1>
+        <h1 className="mb-8 text-2xl font-bold text-gray-900">ダッシュボード</h1>
 
         <div className="mb-6 grid grid-cols-2 gap-4">
           <Link

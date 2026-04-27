@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 
 type Props = {
   laterHref: string;
@@ -10,6 +11,7 @@ type Props = {
 
 export default function OnboardingClient({ laterHref, doneHref }: Props) {
   const [checked, setChecked] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const laterRef = useRef<HTMLAnchorElement>(null);
   const doneRef = useRef<HTMLAnchorElement>(null);
@@ -27,6 +29,14 @@ export default function OnboardingClient({ laterHref, doneHref }: Props) {
   function handleStart() {
     localStorage.setItem("onboarding_completed", "1");
     router.push("/dashboard");
+  }
+
+  function handleReset() {
+    if (!confirm("トークンをリセットすると、古いブックマークレットは使えなくなります。続けますか？")) return;
+    startTransition(async () => {
+      await fetch("/api/token/reset", { method: "POST" });
+      router.refresh();
+    });
   }
 
   return (
@@ -71,6 +81,17 @@ export default function OnboardingClient({ laterHref, doneHref }: Props) {
         >
           はじめる
         </button>
+
+        <div className="mt-6 border-t pt-4">
+          <p className="mb-2 text-xs text-gray-500">動かなくなった場合はリセットして再登録できます</p>
+          <button
+            onClick={handleReset}
+            disabled={isPending}
+            className="rounded border border-red-300 px-3 py-1.5 text-xs text-red-500 hover:border-red-500 hover:text-red-700 disabled:opacity-40"
+          >
+            {isPending ? "リセット中..." : "トークンをリセットする"}
+          </button>
+        </div>
       </div>
     </div>
   );
