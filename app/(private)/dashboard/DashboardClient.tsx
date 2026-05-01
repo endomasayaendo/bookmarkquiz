@@ -26,20 +26,20 @@ export default function DashboardClient({ unreadCount, doneCount }: Props) {
         <div className="mb-6 grid grid-cols-2 gap-4">
           <Link
             href="/articles?status=unread"
-            className="rounded-2xl bg-white p-6 shadow-sm hover:shadow-md transition-shadow"
+            className="rounded-2xl bg-white p-6 shadow-sm hover:shadow-md transition-shadow border-l-4 border-blue-400"
           >
-            <p className="text-sm text-gray-500">未読</p>
-            <p className="text-4xl font-bold">{unreadCount}</p>
-            <p className="text-sm text-gray-400">本</p>
+            <p className="text-sm text-blue-500">未読</p>
+            <p className="text-4xl font-bold text-blue-800">{unreadCount}</p>
+            <p className="text-sm text-blue-300">本</p>
           </Link>
 
           <Link
             href="/articles?status=done"
-            className="rounded-2xl bg-white p-6 shadow-sm hover:shadow-md transition-shadow"
+            className="rounded-2xl bg-white p-6 shadow-sm hover:shadow-md transition-shadow border-l-4 border-green-400"
           >
-            <p className="text-sm text-gray-500">読んだ</p>
-            <p className="text-4xl font-bold">{doneCount}</p>
-            <p className="text-sm text-gray-400">本</p>
+            <p className="text-sm text-green-500">読んだ</p>
+            <p className="text-4xl font-bold text-green-800">{doneCount}</p>
+            <p className="text-sm text-green-300">本</p>
           </Link>
         </div>
 

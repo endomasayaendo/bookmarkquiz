@@ -41,8 +41,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const article = await prisma.article.create({
-    data: { userId, url, title, ogpImage: ogpImage ?? null },
+  const article = await prisma.article.upsert({
+    where: { userId_url: { userId, url } },
+    update: { title, ogpImage: ogpImage ?? null },
+    create: { userId, url, title, ogpImage: ogpImage ?? null },
   });
 
   return NextResponse.json(article, { status: 201, headers: CORS_HEADERS });
