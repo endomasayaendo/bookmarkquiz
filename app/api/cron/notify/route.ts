@@ -34,10 +34,17 @@ export async function POST(req: NextRequest) {
       await resend.emails.send({
         from: process.env.RESEND_FROM!,
         to: user.email!,
-        subject: "今日のクイズができました",
+        subject: "【BookmarkQuiz】今日のクイズができました",
         html: `
-          <p>今日読んだ記事からクイズが生成されました。</p>
-          <p><a href="${appUrl}/quiz">クイズに挑戦する →</a></p>
+          <h2 style="color:#111">BookmarkQuiz</h2>
+          <p>今日読んだ記事からクイズが生成されました。さっそく挑戦してみましょう。</p>
+          <p>
+            <a href="${appUrl}/quiz" style="display:inline-block;padding:10px 20px;background:#111;color:#fff;text-decoration:none;border-radius:6px">
+              クイズに挑戦する →
+            </a>
+          </p>
+          <hr style="margin-top:32px;border:none;border-top:1px solid #eee" />
+          <p style="font-size:12px;color:#999">このメールはBookmarkQuizから自動送信されています。</p>
         `,
       });
       results.sent++;
