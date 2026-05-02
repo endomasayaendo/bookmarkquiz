@@ -4,9 +4,10 @@ import QuizClient from "./QuizClient";
 
 export default async function QuizPage() {
   const session = await auth();
+  const userId = session!.user!.id;
 
   const quizzes = await prisma.quiz.findMany({
-    where: { article: { userId: session!.user!.id } },
+    where: { article: { userId } },
     select: {
       id: true,
       question: true,
@@ -18,7 +19,16 @@ export default async function QuizPage() {
     take: 10,
   });
 
-  return <QuizClient quizzes={quizzes as QuizItem[]} />;
+  const unansweredCount = await prisma.quiz.count({
+    where: {
+      article: { userId },
+      quizAnswers: { none: { userId } },
+    },
+  });
+
+  const allAnswered = quizzes.length > 0 && unansweredCount === 0;
+
+  return <QuizClient quizzes={quizzes as QuizItem[]} allAnswered={allAnswered} />;
 }
 
 export type QuizItem = {

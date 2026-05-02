@@ -12,15 +12,37 @@ type Result = {
 
 type Props = {
   quizzes: QuizItem[];
+  allAnswered: boolean;
 };
 
-export default function QuizClient({ quizzes }: Props) {
+export default function QuizClient({ quizzes, allAnswered }: Props) {
+  const [retry, setRetry] = useState(false);
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  if (allAnswered && !retry) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-sm">
+          <p className="mb-2 text-gray-900 font-medium">本日のクイズは解答済みです</p>
+          <p className="mb-6 text-sm text-gray-500">新しいクイズは明日生成されます</p>
+          <button
+            onClick={() => setRetry(true)}
+            className="mb-3 block w-full rounded-lg bg-gray-900 px-6 py-2 text-sm font-medium text-white hover:bg-gray-700"
+          >
+            もう一度やる
+          </button>
+          <Link href="/dashboard" className="block text-sm text-gray-400 hover:text-gray-600">
+            ダッシュボードへ戻る
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (quizzes.length === 0) {
     return (
