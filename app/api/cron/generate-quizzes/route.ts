@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 import { prisma } from "@/lib/prisma";
 
-const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = genai.getGenerativeModel({ model: "gemini-2.0-flash" });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const PROMPT = (title: string, body: string) => `
 以下の記事から4択クイズを3問作成してください。
@@ -38,7 +37,7 @@ function parseQuizzes(text: string): QuizItem[] {
 
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("Authorization");
-  if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -54,13 +53,17 @@ export async function POST(req: NextRequest) {
     select: { id: true, title: true, bodyText: true },
   });
 
-  const results = { generated: 0, skipped: 0, errors: 0 };
+  const results: { generated: number; skipped: number; errors: number; errorMessages: string[] } = { generated: 0, skipped: 0, errors: 0, errorMessages: [] };
 
   for (const article of articles) {
     try {
       const prompt = PROMPT(article.title, article.bodyText!.slice(0, 8000));
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.7,
+      });
+      const text = completion.choices[0].message.content ?? "";
       const quizzes = parseQuizzes(text);
 
       await prisma.quiz.createMany({
@@ -75,8 +78,9 @@ export async function POST(req: NextRequest) {
       });
 
       results.generated += quizzes.length;
-    } catch {
+    } catch (e) {
       results.errors++;
+      results.errorMessages.push(e instanceof Error ? e.message : String(e));
     }
   }
 
