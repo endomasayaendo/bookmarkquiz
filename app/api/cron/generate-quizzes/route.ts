@@ -36,7 +36,8 @@ function parseQuizzes(text: string): QuizItem[] {
 }
 
 export async function POST(req: NextRequest) {
-  const secret = req.headers.get("Authorization");
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const secret = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
