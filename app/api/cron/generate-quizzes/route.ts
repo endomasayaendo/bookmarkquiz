@@ -35,9 +35,11 @@ function parseQuizzes(text: string): QuizItem[] {
   return JSON.parse(match[0]) as QuizItem[];
 }
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("Authorization") ?? "";
-  const secret = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
+  const secret = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : authHeader;
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -54,7 +56,12 @@ export async function POST(req: NextRequest) {
     select: { id: true, title: true, bodyText: true },
   });
 
-  const results: { generated: number; skipped: number; errors: number; errorMessages: string[] } = { generated: 0, skipped: 0, errors: 0, errorMessages: [] };
+  const results: {
+    generated: number;
+    skipped: number;
+    errors: number;
+    errorMessages: string[];
+  } = { generated: 0, skipped: 0, errors: 0, errorMessages: [] };
 
   for (const article of articles) {
     try {
