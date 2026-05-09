@@ -7,7 +7,10 @@ export default async function QuizPage() {
   const userId = session!.user!.id;
 
   const quizzes = await prisma.quiz.findMany({
-    where: { article: { userId } },
+    where: {
+      article: { userId },
+      quizAnswers: { none: { userId } },
+    },
     select: {
       id: true,
       question: true,
@@ -19,14 +22,11 @@ export default async function QuizPage() {
     take: 10,
   });
 
-  const unansweredCount = await prisma.quiz.count({
-    where: {
-      article: { userId },
-      quizAnswers: { none: { userId } },
-    },
+  const totalCount = await prisma.quiz.count({
+    where: { article: { userId } },
   });
 
-  const allAnswered = quizzes.length > 0 && unansweredCount === 0;
+  const allAnswered = totalCount > 0 && quizzes.length === 0;
 
   return <QuizClient quizzes={quizzes as QuizItem[]} allAnswered={allAnswered} />;
 }
