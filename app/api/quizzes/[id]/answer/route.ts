@@ -18,7 +18,9 @@ export async function POST(
     return NextResponse.json({ error: "selectedIndex is required" }, { status: 400 });
   }
 
-  const quiz = await prisma.quiz.findUnique({ where: { id } });
+  const quiz = await prisma.quiz.findFirst({
+    where: { id, article: { userId: session.user.id } },
+  });
   if (!quiz) {
     return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
   }
