@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 
 type Props = {
   unreadCount: number;
@@ -56,6 +57,13 @@ export default function DashboardClient({ unreadCount, doneCount }: Props) {
         >
           ブックマークレットを再設定する
         </Link>
+
+        <button
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="mt-4 block w-full text-center text-sm text-gray-400 hover:text-gray-600"
+        >
+          サインアウト
+        </button>
       </div>
     </div>
   );
