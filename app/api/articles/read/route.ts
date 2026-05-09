@@ -17,7 +17,10 @@ function isAllowedDomain(url: string): boolean {
 }
 
 async function fetchBodyText(url: string): Promise<string> {
-  const res = await fetch(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("text/html")) throw new Error(`Unexpected content-type: ${contentType}`);
   const html = await res.text();
   const $ = cheerio.load(html);
   $("script, style, nav, header, footer, aside").remove();
