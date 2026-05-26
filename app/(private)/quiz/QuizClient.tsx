@@ -12,10 +12,11 @@ type Result = {
 
 type Props = {
   quizzes: QuizItem[];
+  allQuizzes: QuizItem[];
   allAnswered: boolean;
 };
 
-export default function QuizClient({ quizzes, allAnswered }: Props) {
+export default function QuizClient({ quizzes, allQuizzes, allAnswered }: Props) {
   const [retry, setRetry] = useState(false);
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -44,7 +45,9 @@ export default function QuizClient({ quizzes, allAnswered }: Props) {
     );
   }
 
-  if (quizzes.length === 0) {
+  const activeQuizzes = retry ? allQuizzes : quizzes;
+
+  if (activeQuizzes.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
         <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-sm">
@@ -68,7 +71,7 @@ export default function QuizClient({ quizzes, allAnswered }: Props) {
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
         <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-sm">
           <p className="mb-1 text-3xl font-bold text-gray-900">
-            {score} / {quizzes.length}
+            {score} / {activeQuizzes.length}
           </p>
           <p className="mb-6 text-sm text-gray-500">正解数</p>
           <Link
@@ -82,7 +85,7 @@ export default function QuizClient({ quizzes, allAnswered }: Props) {
     );
   }
 
-  const quiz = quizzes[index];
+  const quiz = activeQuizzes[index];
 
   async function handleSelect(choiceIndex: number) {
     if (selected !== null || loading) return;
@@ -101,7 +104,7 @@ export default function QuizClient({ quizzes, allAnswered }: Props) {
   }
 
   function handleNext() {
-    if (index + 1 >= quizzes.length) {
+    if (index + 1 >= activeQuizzes.length) {
       setFinished(true);
     } else {
       setIndex((i) => i + 1);
@@ -118,7 +121,7 @@ export default function QuizClient({ quizzes, allAnswered }: Props) {
             ← ダッシュボード
           </Link>
           <span>
-            {index + 1} / {quizzes.length}
+            {index + 1} / {activeQuizzes.length}
           </span>
         </div>
 

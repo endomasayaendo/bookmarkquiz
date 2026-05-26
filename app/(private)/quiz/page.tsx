@@ -6,29 +6,32 @@ export default async function QuizPage() {
   const session = await auth();
   const userId = session!.user!.id;
 
-  const quizzes = await prisma.quiz.findMany({
-    where: {
-      article: { userId },
-      quizAnswers: { none: { userId } },
-    },
-    select: {
-      id: true,
-      question: true,
-      choices: true,
-      type: true,
-      article: { select: { title: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-  });
+  const quizSelect = {
+    id: true,
+    question: true,
+    choices: true,
+    type: true,
+    article: { select: { title: true } },
+  };
 
-  const totalCount = await prisma.quiz.count({
-    where: { article: { userId } },
-  });
+  const [quizzes, allQuizzes] = await Promise.all([
+    prisma.quiz.findMany({
+      where: { article: { userId }, quizAnswers: { none: { userId } } },
+      select: quizSelect,
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    }),
+    prisma.quiz.findMany({
+      where: { article: { userId } },
+      select: quizSelect,
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    }),
+  ]);
 
-  const allAnswered = totalCount > 0 && quizzes.length === 0;
+  const allAnswered = allQuizzes.length > 0 && quizzes.length === 0;
 
-  return <QuizClient quizzes={quizzes as QuizItem[]} allAnswered={allAnswered} />;
+  return <QuizClient quizzes={quizzes as QuizItem[]} allQuizzes={allQuizzes as QuizItem[]} allAnswered={allAnswered} />;
 }
 
 export type QuizItem = {
