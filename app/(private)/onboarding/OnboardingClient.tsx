@@ -38,8 +38,9 @@ export default function OnboardingClient({ laterHref, doneHref }: Props) {
     alert("ドラッグしてブックマークバーに追加してください");
   }
 
-  function handleStart() {
-    localStorage.setItem("onboarding_completed", "1");
+  async function handleStart() {
+    const res = await fetch("/api/onboarding/complete", { method: "POST" });
+    if (!res.ok) return;
     router.push("/dashboard");
   }
 

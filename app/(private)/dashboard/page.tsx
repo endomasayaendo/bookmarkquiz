@@ -5,10 +5,18 @@ import DashboardClient from "./DashboardClient";
 export default async function DashboardPage() {
   const session = await auth();
 
-  const [unreadCount, doneCount] = await Promise.all([
-    prisma.article.count({ where: { userId: session!.user!.id, status: "unread" } }),
-    prisma.article.count({ where: { userId: session!.user!.id, status: "done" } }),
+  const userId = session!.user!.id;
+  const [unreadCount, doneCount, user] = await Promise.all([
+    prisma.article.count({ where: { userId, status: "unread" } }),
+    prisma.article.count({ where: { userId, status: "done" } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { onboardingCompleted: true } }),
   ]);
 
-  return <DashboardClient unreadCount={unreadCount} doneCount={doneCount} />;
+  return (
+    <DashboardClient
+      unreadCount={unreadCount}
+      doneCount={doneCount}
+      onboardingCompleted={user?.onboardingCompleted ?? false}
+    />
+  );
 }

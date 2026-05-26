@@ -8,16 +8,17 @@ import { signOut } from "next-auth/react";
 type Props = {
   unreadCount: number;
   doneCount: number;
+  onboardingCompleted: boolean;
 };
 
-export default function DashboardClient({ unreadCount, doneCount }: Props) {
+export default function DashboardClient({ unreadCount, doneCount, onboardingCompleted }: Props) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!localStorage.getItem("onboarding_completed")) {
+    if (!onboardingCompleted) {
       router.replace("/onboarding");
     }
-  }, [router]);
+  }, [onboardingCompleted, router]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
