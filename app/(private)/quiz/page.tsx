@@ -6,7 +6,8 @@ export default async function QuizPage() {
   const session = await auth();
   const userId = session!.user!.id;
 
-  const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const since = new Date();
+  since.setDate(since.getDate() - 7);
 
   const quizSelect = {
     id: true,

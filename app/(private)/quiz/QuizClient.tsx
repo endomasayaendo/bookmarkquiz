@@ -29,13 +29,14 @@ export default function QuizClient({ quizzes, allQuizzes, allAnswered }: Props) 
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
         <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-sm">
-          <p className="mb-2 text-gray-900 font-medium">本日のクイズは解答済みです</p>
-          <p className="mb-6 text-sm text-gray-500">新しいクイズは明日生成されます</p>
+          <p className="mb-2 text-gray-900 font-medium">未回答のクイズはありません</p>
+          <p className="mb-1 text-sm text-gray-500">新しいクイズは毎日21:10ごろ生成されます</p>
+          <p className="mb-6 text-sm text-gray-500">直近7日以内のクイズを復習できます</p>
           <button
             onClick={() => setRetry(true)}
             className="mb-3 block w-full rounded-lg bg-gray-900 px-6 py-2 text-sm font-medium text-white hover:bg-gray-700"
           >
-            もう一度やる
+            直近のクイズを復習する
           </button>
           <Link href="/dashboard" className="block text-sm text-gray-400 hover:text-gray-600">
             ダッシュボードへ戻る
@@ -53,7 +54,7 @@ export default function QuizClient({ quizzes, allQuizzes, allAnswered }: Props) 
         <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-sm">
           <p className="mb-2 text-gray-900 font-medium">クイズがまだありません</p>
           <p className="mb-6 text-sm text-gray-500">
-            記事を「読んだ」に登録するとクイズが毎晩自動生成されます
+            記事を「読んだ」に登録すると毎日21:10ごろクイズが生成されます。表示対象は直近7日以内です。
           </p>
           <Link
             href="/dashboard"
@@ -120,9 +121,10 @@ export default function QuizClient({ quizzes, allQuizzes, allAnswered }: Props) 
           <Link href="/dashboard" className="hover:text-gray-600">
             ← ダッシュボード
           </Link>
-          <span>
-            {index + 1} / {activeQuizzes.length}
-          </span>
+          <div className="text-right">
+            <span>{index + 1} / {activeQuizzes.length}</span>
+            <p className="text-xs text-gray-300">{retry ? "復習モード（直近7日）" : "直近7日以内"}</p>
+          </div>
         </div>
 
         <div className="rounded-2xl bg-white p-6 shadow-sm">
