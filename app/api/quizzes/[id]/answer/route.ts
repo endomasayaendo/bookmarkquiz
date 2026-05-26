@@ -27,13 +27,15 @@ export async function POST(
 
   const isCorrect = quiz.answer === selectedIndex;
 
-  await prisma.quizAnswer.create({
-    data: {
-      userId: session.user.id,
-      quizId: id,
-      isCorrect,
-    },
+  const existing = await prisma.quizAnswer.findFirst({
+    where: { quizId: id, userId: session.user.id },
   });
+
+  if (!existing) {
+    await prisma.quizAnswer.create({
+      data: { userId: session.user.id, quizId: id, isCorrect },
+    });
+  }
 
   return NextResponse.json({
     isCorrect,
