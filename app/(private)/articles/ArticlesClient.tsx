@@ -25,7 +25,12 @@ export default function ArticlesClient({ articles }: Props) {
   }
 
   async function handleToggle(id: string) {
-    await fetch(`/api/articles/${id}`, { method: "PATCH" });
+    const res = await fetch(`/api/articles/${id}`, { method: "PATCH" });
+    if (!res.ok) {
+      const { error } = await res.json().catch(() => ({ error: "ステータスの更新に失敗しました" }));
+      alert(error);
+      return;
+    }
     refresh();
   }
 
