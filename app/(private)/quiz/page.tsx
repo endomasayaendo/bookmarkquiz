@@ -6,6 +6,8 @@ export default async function QuizPage() {
   const session = await auth();
   const userId = session!.user!.id;
 
+  const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+
   const quizSelect = {
     id: true,
     question: true,
@@ -14,15 +16,17 @@ export default async function QuizPage() {
     article: { select: { title: true } },
   };
 
+  const recentWhere = { article: { userId }, createdAt: { gte: since } };
+
   const [quizzes, allQuizzes] = await Promise.all([
     prisma.quiz.findMany({
-      where: { article: { userId }, quizAnswers: { none: { userId } } },
+      where: { ...recentWhere, quizAnswers: { none: { userId } } },
       select: quizSelect,
       orderBy: { createdAt: "desc" },
       take: 10,
     }),
     prisma.quiz.findMany({
-      where: { article: { userId } },
+      where: recentWhere,
       select: quizSelect,
       orderBy: { createdAt: "desc" },
       take: 10,

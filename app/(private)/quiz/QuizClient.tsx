@@ -170,7 +170,7 @@ export default function QuizClient({ quizzes, allQuizzes, allAnswered }: Props) 
               onClick={handleNext}
               className="mt-4 w-full rounded-lg bg-gray-900 px-4 py-3 text-sm font-medium text-white hover:bg-gray-700"
             >
-              {index + 1 >= quizzes.length ? "結果を見る" : "次の問題"}
+              {index + 1 >= activeQuizzes.length ? "結果を見る" : "次の問題"}
             </button>
           )}
         </div>
