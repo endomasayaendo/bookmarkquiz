@@ -2,12 +2,14 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import QuizClient from "./QuizClient";
 
+import { QUIZ_LOOKBACK_DAYS, QUIZ_LIMIT } from "./config";
+
 export default async function QuizPage() {
   const session = await auth();
   const userId = session!.user!.id;
 
   const since = new Date();
-  since.setDate(since.getDate() - 7);
+  since.setDate(since.getDate() - QUIZ_LOOKBACK_DAYS);
 
   const quizSelect = {
     id: true,
@@ -24,13 +26,13 @@ export default async function QuizPage() {
       where: { ...recentWhere, quizAnswers: { none: { userId } } },
       select: quizSelect,
       orderBy: { createdAt: "desc" },
-      take: 10,
+      take: QUIZ_LIMIT,
     }),
     prisma.quiz.findMany({
       where: recentWhere,
       select: quizSelect,
       orderBy: { createdAt: "desc" },
-      take: 10,
+      take: QUIZ_LIMIT,
     }),
   ]);
 

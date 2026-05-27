@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { QuizItem } from "./page";
+import { QUIZ_LOOKBACK_DAYS, QUIZ_LIMIT } from "./config";
 
 type Result = {
   isCorrect: boolean;
@@ -31,7 +32,7 @@ export default function QuizClient({ quizzes, allQuizzes, allAnswered }: Props) 
         <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-sm">
           <p className="mb-2 text-gray-900 font-medium">未回答のクイズはありません</p>
           <p className="mb-1 text-sm text-gray-500">新しいクイズは毎日21:10ごろ生成されます</p>
-          <p className="mb-6 text-sm text-gray-500">直近7日以内のクイズを復習できます</p>
+          <p className="mb-6 text-sm text-gray-500">直近{QUIZ_LOOKBACK_DAYS}日以内のクイズを最大{QUIZ_LIMIT}問復習できます</p>
           <button
             onClick={() => setRetry(true)}
             className="mb-3 block w-full rounded-lg bg-gray-900 px-6 py-2 text-sm font-medium text-white hover:bg-gray-700"
@@ -54,7 +55,7 @@ export default function QuizClient({ quizzes, allQuizzes, allAnswered }: Props) 
         <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-sm">
           <p className="mb-2 text-gray-900 font-medium">クイズがまだありません</p>
           <p className="mb-6 text-sm text-gray-500">
-            記事を「読んだ」に登録すると毎日21:10ごろクイズが生成されます。表示対象は直近7日以内です。
+            記事を「読んだ」に登録すると毎日21:10ごろクイズが生成されます。直近{QUIZ_LOOKBACK_DAYS}日以内・最大{QUIZ_LIMIT}問が表示されます。
           </p>
           <Link
             href="/dashboard"
@@ -123,7 +124,7 @@ export default function QuizClient({ quizzes, allQuizzes, allAnswered }: Props) 
           </Link>
           <div className="text-right">
             <span>{index + 1} / {activeQuizzes.length}</span>
-            <p className="text-xs text-gray-300">{retry ? "復習モード（直近7日）" : "直近7日以内"}</p>
+            <p className="text-xs text-gray-300">{retry ? `復習モード（直近${QUIZ_LOOKBACK_DAYS}日・最大${QUIZ_LIMIT}問）` : `直近${QUIZ_LOOKBACK_DAYS}日・最大${QUIZ_LIMIT}問`}</p>
           </div>
         </div>
 
