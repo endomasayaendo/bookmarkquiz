@@ -3,29 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getBookmarkletUserId } from "@/lib/bookmarklet-auth";
 import { CORS_HEADERS, corsPreflightResponse } from "@/lib/cors";
-import * as cheerio from "cheerio";
-
-const ALLOWED_DOMAINS = ["qiita.com", "zenn.dev"];
-
-function isAllowedDomain(url: string): boolean {
-  try {
-    const { hostname } = new URL(url);
-    return ALLOWED_DOMAINS.some((d) => hostname === d || hostname.endsWith(`.${d}`));
-  } catch {
-    return false;
-  }
-}
-
-async function fetchBodyText(url: string): Promise<string> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
-  if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-  const contentType = res.headers.get("content-type") ?? "";
-  if (!contentType.includes("text/html")) throw new Error(`Unexpected content-type: ${contentType}`);
-  const html = await res.text();
-  const $ = cheerio.load(html);
-  $("script, style, nav, header, footer, aside").remove();
-  return $("body").text().replace(/\s+/g, " ").trim().slice(0, 20000);
-}
+import { fetchBodyText, isAllowedArticleUrl } from "@/lib/article-content";
 
 export function OPTIONS() {
   return corsPreflightResponse();
@@ -46,7 +24,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!isAllowedDomain(url)) {
+  if (!isAllowedArticleUrl(url)) {
     return NextResponse.json(
       { error: "このサイトは対応していません" },
       { status: 400, headers: CORS_HEADERS }

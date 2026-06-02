@@ -3,17 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getBookmarkletUserId } from "@/lib/bookmarklet-auth";
 import { CORS_HEADERS, corsPreflightResponse } from "@/lib/cors";
-
-const ALLOWED_DOMAINS = ["qiita.com", "zenn.dev"];
-
-function isAllowedDomain(url: string): boolean {
-  try {
-    const { hostname } = new URL(url);
-    return ALLOWED_DOMAINS.some((d) => hostname === d || hostname.endsWith(`.${d}`));
-  } catch {
-    return false;
-  }
-}
+import { isAllowedArticleUrl } from "@/lib/article-content";
 
 export function OPTIONS() {
   return corsPreflightResponse();
@@ -34,7 +24,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!isAllowedDomain(url)) {
+  if (!isAllowedArticleUrl(url)) {
     return NextResponse.json(
       { error: "このサイトは対応していません" },
       { status: 400, headers: CORS_HEADERS }
