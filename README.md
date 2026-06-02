@@ -13,6 +13,29 @@ GitHubアカウントがあればすぐ使えます。
 
 ---
 
+## Demo
+
+![Dashboard](./public/demo/dashboard.png)
+
+<details>
+<summary>その他のスクリーンショット</summary>
+
+### オンボーディング（ブックマークレット設定）
+![Onboarding](./public/demo/onboarding.png)
+
+### 記事一覧（未読）
+![Unread articles](./public/demo/unread.png)
+
+### 記事一覧（読んだ）
+![Read articles](./public/demo/read.png)
+
+### クイズ
+![Quiz](./public/demo/quiz.png)
+
+</details>
+
+---
+
 ## 使い方
 
 1. **オンボーディング** — ブックマークレット2本をブックマークバーに追加
