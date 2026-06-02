@@ -22,7 +22,8 @@ export function extractBodyText(html: string): string {
 }
 
 export async function fetchBodyText(url: string): Promise<string> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  if (!isAllowedArticleUrl(url)) throw new Error(`Disallowed URL: ${url}`);
+  const res = await fetch(url, { signal: AbortSignal.timeout(10000), redirect: "manual" });
   if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
   const contentType = res.headers.get("content-type") ?? "";
   if (!contentType.includes("text/html")) throw new Error(`Unexpected content-type: ${contentType}`);
