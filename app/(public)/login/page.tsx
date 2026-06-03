@@ -18,6 +18,21 @@ export default function LoginPage() {
             GitHub でログイン
           </button>
         </form>
+        {process.env.NODE_ENV === "development" && (
+          <form
+            action={async () => {
+              "use server";
+              await signIn("credentials", { redirectTo: "/" });
+            }}
+          >
+            <button
+              type="submit"
+              className="flex items-center gap-2 rounded-lg border border-dashed border-gray-400 px-6 py-3 text-gray-600 hover:bg-gray-100"
+            >
+              Dev Login（開発用）
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );
