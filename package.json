@@ -7,7 +7,11 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:test:up": "docker compose -f docker-compose.test.yml up -d --wait",
+    "db:test:down": "docker compose -f docker-compose.test.yml down",
+    "test:e2e": "npm run db:test:up && playwright test",
+    "test:e2e:ui": "npm run db:test:up && playwright test --ui"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
@@ -26,6 +30,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",

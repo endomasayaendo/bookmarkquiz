@@ -88,8 +88,11 @@ flowchart LR
 | サービス | 用途 | 取得先 |
 |----------|------|--------|
 | Supabase | PostgreSQL DB | https://supabase.com |
-| GitHub OAuth | ログイン認証 | https://github.com/settings/developers |
+| GitHub OAuth | ログイン認証（ローカルは Dev Login で代替可） | https://github.com/settings/developers |
 | Groq | クイズ生成AI | https://console.groq.com |
+
+> ローカルでは GitHub OAuth の代わりに、ログイン画面の「Dev Login（開発用）」ボタンで
+> デモユーザーとして入れます（`NODE_ENV=development` のときだけ表示）。GitHub アカウントは不要です。
 
 ```bash
 npm install
@@ -111,6 +114,20 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 npx prisma migrate deploy
 npm run dev
 ```
+
+---
+
+## テスト
+
+| 種類 | コマンド | 内容 |
+|------|---------|------|
+| ユニット/結合 | `npm test` | Vitest。`lib/` の関数と API ルートを検証（DB・fetch はモック） |
+| E2E | `npm run test:e2e` | Playwright。実ブラウザでログイン〜オンボーディング・記事・クイズ回答まで通しで検証 |
+
+E2E は本番 DB を汚さないよう、**Docker のローカル test 用 Postgres** に対して実行します（要 Docker Desktop）。
+`npm run test:e2e` がコンテナ起動 → スキーマ投入 → テスト実行までを行います。後片付けは `npm run db:test:down`。
+ログインは開発限定の Dev Login を使うため、E2E に GitHub アカウントは不要です。
+CI（GitHub Actions）でも Postgres サービス上で同じ E2E が走ります。
 
 ---
 

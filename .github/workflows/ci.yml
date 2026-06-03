@@ -23,3 +23,47 @@ jobs:
       - run: npm test
 
       - run: npm run lint
+
+  e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: bookmarkquiz_test
+        # .env.test と同じ localhost:5433 に合わせる
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d bookmarkquiz_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+
+    # next dev / Auth.js / Prisma が要求する環境変数（本番値ではないダミー）
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5433/bookmarkquiz_test
+      AUTH_SECRET: ci-e2e-secret
+      NEXT_PUBLIC_APP_URL: http://localhost:3100
+      GITHUB_CLIENT_ID: dummy
+      GITHUB_CLIENT_SECRET: dummy
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm install
+
+      # Prisma Client は生成物が gitignore されているので CI で生成する
+      - run: npx prisma generate
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: npx playwright test
