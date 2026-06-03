@@ -36,6 +36,14 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# テスト用ローカルDB設定は秘密情報なしなのでコミットする
+!.env.test
+
+# playwright
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
 
 # vercel
 .vercel
