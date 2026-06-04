@@ -4,5 +4,10 @@
       "path": "/api/cron/generate-quizzes",
       "schedule": "10 12 * * *"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "main": false
+    }
+  }
 }
