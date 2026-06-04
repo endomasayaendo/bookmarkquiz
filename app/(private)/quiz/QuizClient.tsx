@@ -124,7 +124,7 @@ export default function QuizClient({ quizzes, allQuizzes, allAnswered }: Props) 
           </Link>
           <div className="text-right">
             <span>{index + 1} / {activeQuizzes.length}</span>
-            <p className="text-xs text-gray-300">{retry ? `復習モード（直近${QUIZ_LOOKBACK_DAYS}日・最大${QUIZ_LIMIT}問）` : `直近${QUIZ_LOOKBACK_DAYS}日・最大${QUIZ_LIMIT}問`}</p>
+            <p className="text-xs text-gray-300">{retry ? `復習モード（直近${QUIZ_LOOKBACK_DAYS}日・最大${QUIZ_LIMIT}問）` : "未回答のクイズ"}</p>
           </div>
         </div>
 
