@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
   if (!isAllowedArticleUrl(url)) {
     return NextResponse.json(
-      { error: "このサイトは対応していません" },
+      { error: "Qiita / Zenn の記事ページで実行してください" },
       { status: 400, headers: CORS_HEADERS }
     );
   }

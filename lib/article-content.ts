@@ -1,11 +1,25 @@
 import * as cheerio from "cheerio";
 
-export const ALLOWED_ARTICLE_DOMAINS = ["qiita.com", "zenn.dev"] as const;
+// 対応サイトの「記事ページ」だけを許可する。ドメイン一致だけだと
+// トップページや一覧ページでもブックマークレットが通ってしまうため、
+// パスの形まで検証して記事ページに限定する。
+const ARTICLE_URL_RULES: { domain: string; path: RegExp }[] = [
+  // Qiita 公開記事: /{user}/items/{id}
+  { domain: "qiita.com", path: /^\/[^/]+\/items\/[^/]+\/?$/ },
+  // Qiita Team（サブドメイン）記事: /posts/{id}
+  { domain: "qiita.com", path: /^\/posts\/[^/]+\/?$/ },
+  // Zenn 記事: /{user}/articles/{slug}
+  { domain: "zenn.dev", path: /^\/[^/]+\/articles\/[^/]+\/?$/ },
+];
 
 export function isAllowedArticleUrl(url: string): boolean {
   try {
-    const { hostname } = new URL(url);
-    return ALLOWED_ARTICLE_DOMAINS.some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
+    const { hostname, pathname } = new URL(url);
+    return ARTICLE_URL_RULES.some(
+      (rule) =>
+        (hostname === rule.domain || hostname.endsWith(`.${rule.domain}`)) &&
+        rule.path.test(pathname)
+    );
   } catch {
     return false;
   }
