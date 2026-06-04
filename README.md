@@ -13,29 +13,6 @@ GitHubアカウントがあればすぐ使えます。
 
 ---
 
-## Demo
-
-![Dashboard](./public/demo/dashboard.png)
-
-<details>
-<summary>その他のスクリーンショット</summary>
-
-### オンボーディング（ブックマークレット設定）
-![Onboarding](./public/demo/onboarding.png)
-
-### 記事一覧（未読）
-![Unread articles](./public/demo/unread.png)
-
-### 記事一覧（読んだ）
-![Read articles](./public/demo/read.png)
-
-### クイズ
-![Quiz](./public/demo/quiz.png)
-
-</details>
-
----
-
 ## 使い方
 
 1. **オンボーディング** — ブックマークレット2本をブックマークバーに追加
@@ -43,6 +20,24 @@ GitHubアカウントがあればすぐ使えます。
 3. **読んだ** — 記事を読み終わったらブックマークレットをクリック（現在はQiita・Zennのみ対応）
 4. **記事一覧** — 未読・読んだ記事をダッシュボードから確認・管理できる
 5. **クイズ** — 毎晩21時に読んだ記事からAIがクイズを自動生成、好きなタイミングで復習する
+
+### セットアップ（ブックマークレットをドラッグ）
+
+![オンボーディング](./public/demo/onboarding.gif)
+
+### あとで読む記事を管理する
+
+![未読の記事一覧](./public/demo/unread.gif)
+
+### 読んだ記事を管理する
+
+![読んだ記事一覧](./public/demo/read.gif)
+
+### クイズで復習する
+
+毎晩21時、読んだ記事からAIが4択クイズを自動生成。好きなタイミングで回答すると、正誤判定と解説がその場で表示される。
+
+![クイズに回答する](./public/demo/quiz.gif)
 
 ---
 
