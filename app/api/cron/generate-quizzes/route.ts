@@ -3,8 +3,6 @@ import Groq from "groq-sdk";
 import { prisma } from "@/lib/prisma";
 import { parseQuizzes } from "@/lib/quiz-parser";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
 const PROMPT = (title: string, body: string) => `
 以下の記事から4択クイズを3問作成してください。
 記事タイトル: ${title}
@@ -31,6 +29,8 @@ export async function GET(req: NextRequest) {
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
