@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import OnboardingClient from "./OnboardingClient";
@@ -22,7 +23,12 @@ export default async function OnboardingPage() {
     select: { bookmarkletToken: true },
   });
 
-  let token = user?.bookmarkletToken;
+  // セッション（JWT）は有効でも、対象ユーザーがDBに存在しないことがある
+  // （DB入れ替え・ユーザー削除後など）。存在しない行を update すると 500 になるため、
+  // ログインし直しへ誘導する。/login はログイン済みでも素通しなのでループしない。
+  if (!user) redirect("/login");
+
+  let token = user.bookmarkletToken;
   if (!token) {
     token = crypto.randomUUID();
     await prisma.user.update({
