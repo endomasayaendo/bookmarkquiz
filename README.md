@@ -78,25 +78,64 @@ flowchart LR
 
 ## ローカルで動かす
 
-以下の外部サービスのアカウントとAPIキーが必要です。
+外部アカウント不要の **Docker** での起動を推奨します。本番に近い構成で試したい場合は Supabase を使う手順も用意しています。
+
+まずリポジトリを取得して依存をインストール:
+
+```bash
+git clone https://github.com/endomasayaendo/bookmarkquiz.git
+cd bookmarkquiz
+npm install
+```
+
+### A. Docker でサクッと試す（おすすめ・外部アカウント不要）
+
+DB はローカルの Docker Postgres、ログインは開発用の **Dev Login**、クイズは **シード** で投入するので、
+**Supabase / GitHub OAuth / Groq はいずれも不要**です（要 [Docker Desktop](https://www.docker.com/products/docker-desktop/)）。
+
+`.env` を作成（GitHub の値はプレースホルダでOK。Dev Login は使いません）:
+
+```env
+DATABASE_URL=postgresql://test:test@localhost:5433/bookmarkquiz_test
+AUTH_SECRET=            # openssl rand -base64 32 で生成
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+CRON_SECRET=dev
+GITHUB_CLIENT_ID=dummy
+GITHUB_CLIENT_SECRET=dummy
+# GROQ_API_KEY=        # 「新しいクイズを自分で生成」する場合のみ必要
+```
+
+ローカル Postgres を起動 → スキーマ反映 → デモデータ投入:
+
+```bash
+npm run db:test:up     # Docker で Postgres を起動
+npx prisma db push     # スキーマを反映
+npm run db:seed        # デモのユーザー・記事・クイズを投入
+```
+
+起動してログイン:
+
+```bash
+npm run dev
+```
+
+http://localhost:3000 を開き、ログイン画面の **「Dev Login（開発用）」** で入ります
+（`NODE_ENV=development` のときだけ表示）。デモの記事とクイズが入っているので、記事一覧からクイズ回答まで一通り触れます。
+
+後片付けは `npm run db:test:down`（このローカルDBは揮発するので、次回は `npm run db:seed` で復元できます）。
+
+### B. Supabase で動かす（本番に近い構成）
+
+実際のクラウド DB と GitHub ログインで動かす場合は、以下のアカウントとキーが必要です。
 
 | サービス | 用途 | 取得先 |
 |----------|------|--------|
 | Supabase | PostgreSQL DB | https://supabase.com |
-| GitHub OAuth | ログイン認証（ローカルは Dev Login で代替可） | https://github.com/settings/developers |
+| GitHub OAuth | ログイン認証 | https://github.com/settings/developers |
 | Groq | クイズ生成AI | https://console.groq.com |
 
-> ローカルでは GitHub OAuth の代わりに、ログイン画面の「Dev Login（開発用）」ボタンで
-> デモユーザーとして入れます（`NODE_ENV=development` のときだけ表示）。GitHub アカウントは不要です。
-
-```bash
-npm install
-```
-
-`.env` を作成:
-
 ```env
-DATABASE_URL=          # Supabase の PostgreSQL 接続文字列
+DATABASE_URL=          # Supabase の接続文字列（サーバーレス向けに Transaction pooler 推奨）
 GITHUB_CLIENT_ID=      # GitHub OAuth App
 GITHUB_CLIENT_SECRET=  # GitHub OAuth App
 AUTH_SECRET=           # openssl rand -base64 32 で生成
@@ -106,7 +145,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 ```bash
-npx prisma migrate deploy
+npx prisma db push
 npm run dev
 ```
 
@@ -135,9 +174,11 @@ CI（GitHub Actions）でも Postgres サービス上で同じ E2E が走りま�
 | PATCH | /api/articles/[id] | ステータス切り替え |
 | DELETE | /api/articles/[id] | 記事削除 |
 | GET | /api/dashboard | 未読数・読んだ数 |
+| POST | /api/onboarding/complete | オンボーディング完了 |
 | GET | /api/quizzes | クイズ一覧（answer含まない） |
 | POST | /api/quizzes/[id]/answer | 回答送信・正誤判定 |
 | POST | /api/cron/generate-quizzes | クイズ生成（Vercel Cron） |
+| POST | /api/cron/notify | メール通知（Vercel Cron） |
 | POST | /api/token/reset | ブックマークレットトークン再発行 |
 
 ---
@@ -154,6 +195,7 @@ CI（GitHub Actions）でも Postgres サービス上で同じ E2E が走りま�
 | name | string | |
 | email | string | |
 | bookmarklet_token | string | ブックマークレット認証用 |
+| onboarding_completed | boolean | オンボーディング完了フラグ |
 | created_at | timestamp | |
 
 ### articles
