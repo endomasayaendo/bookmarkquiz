@@ -1,10 +1,16 @@
 name: CI
 
 on:
+  # main 以外のブランチ（dev/feature）への push でも検証を回す
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
     branches: [main]
+
+# 同一ブランチで新しい push が来たら、走行中の古い run はキャンセルする
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -67,29 +73,3 @@ jobs:
       - run: npx playwright install --with-deps chromium
 
       - run: npx playwright test
-
-  deploy:
-    needs: [test, e2e]
-    runs-on: ubuntu-latest
-    # main への push のときだけ本番デプロイ（PR では走らせない）
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - run: npm install --global vercel@latest
-
-      # Vercel の環境設定を取得 → 本番ビルド → ビルド済み成果物をデプロイ
-      - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-
-      - run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-
-      - run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}

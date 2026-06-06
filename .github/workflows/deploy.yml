@@ -1,0 +1,38 @@
+name: Deploy
+
+# CI（test + e2e）が main 上で完了したことを起点にデプロイする。
+# CI と関心を分離するため別ワークフローにし、workflow_run で連結している。
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # CI が success のときだけ。失敗・キャンセル時はデプロイしない。
+    if: github.event.workflow_run.conclusion == 'success'
+
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    steps:
+      # CI が通したのと同じコミットをデプロイする（main 最新ではなく該当 SHA）
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install --global vercel@latest
+
+      # Vercel の環境設定を取得 → 本番ビルド → ビルド済み成果物をデプロイ
+      - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
