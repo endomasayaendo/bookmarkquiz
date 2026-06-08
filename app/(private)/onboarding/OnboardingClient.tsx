@@ -8,6 +8,9 @@ type Props = {
   doneHref: string;
 };
 
+// オンボーディング画面のクライアントコンポーネント。
+// 2つのブックマークレット（あとで読む／読んだ）をブックマークバーへ
+// ドラッグ登録させ、チュートリアル演出と完了・トークンリセット操作を担う。
 export default function OnboardingClient({ laterHref, doneHref }: Props) {
   const [checked, setChecked] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -16,11 +19,14 @@ export default function OnboardingClient({ laterHref, doneHref }: Props) {
   const laterRef = useRef<HTMLAnchorElement>(null);
   const doneRef = useRef<HTMLAnchorElement>(null);
 
+  // javascript: URL は JSX の href に直接書くと React/リンタに嫌われるため、
+  // マウント後に DOM 属性として直接セットして回避する。
   useEffect(() => {
     laterRef.current?.setAttribute("href", laterHref);
     doneRef.current?.setAttribute("href", doneHref);
   }, [laterHref, doneHref]);
 
+  // チュートリアルのハイライトを 3秒ごとに 1→2→終了 と自動で進める。
   useEffect(() => {
     if (!tutorialStep) return;
     const t = setTimeout(() => {
@@ -29,21 +35,26 @@ export default function OnboardingClient({ laterHref, doneHref }: Props) {
     return () => clearTimeout(t);
   }, [tutorialStep]);
 
+  // ユーザーが実際にドラッグしたら、その手順を済みとみなして次へ進める。
   function handleDragStart(step: 1 | 2) {
     setTutorialStep((s) => (s === step ? (step === 1 ? 2 : null) : s));
   }
 
+  // ボタンは「ドラッグして登録」するもの。クリックは誤操作なので案内を出す。
   function handleBookmarkletClick(e: React.MouseEvent) {
     e.preventDefault();
     alert("ドラッグしてブックマークバーに追加してください");
   }
 
+  // 完了を記録してダッシュボードへ。
   async function handleStart() {
     const res = await fetch("/api/onboarding/complete", { method: "POST" });
     if (!res.ok) return;
     router.push("/dashboard");
   }
 
+  // トークンを作り直す。再生成後はサーバーコンポーネントを再取得して
+  // 新トークン入りのブックマークレットを表示する。
   function handleReset() {
     if (!confirm("トークンをリセットすると、古いブックマークレットは使えなくなります。続けますか？")) return;
     startTransition(async () => {

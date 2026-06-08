@@ -5,6 +5,9 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import { authConfig } from "./auth.config";
 
+// アプリ本体（Node ランタイム）用の Auth.js セットアップ。
+// auth.config の共通設定に、Prisma アダプタと各認証プロバイダを足して
+// handlers / auth() などをエクスポートする。セッションは JWT 戦略。
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(prisma),
@@ -34,6 +37,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   session: { strategy: "jwt" },
   callbacks: {
+    // 初回サインイン時にユーザー ID を JWT へ載せ、以降の session() で
+    // session.user.id として参照できるようにする（DB を引かずに本人特定）。
     jwt({ token, user }) {
       if (user) token.id = user.id;
       return token;

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+// ログインユーザーのクイズ一覧を返す。?type=daily|weekly で絞り込み可能。
+// 出題前の取得なので answer（正解）と explanation は select に含めない。
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {

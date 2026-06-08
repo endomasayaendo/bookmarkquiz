@@ -16,14 +16,19 @@ type Props = {
   articles: Article[];
 };
 
+// 記事一覧の操作を担うクライアントコンポーネント。
+// 既読/未読トグル・削除を API に投げ、成功したらサーバーコンポーネントを
+// 再取得(refresh)して最新状態を反映する。
 export default function ArticlesClient({ articles }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  // サーバーコンポーネントを再実行して一覧を最新化する。
   function refresh() {
     startTransition(() => { router.refresh(); });
   }
 
+  // 既読/未読を切り替える。本文取得失敗(502)などはサーバーのメッセージを表示。
   async function handleToggle(id: string) {
     const res = await fetch(`/api/articles/${id}`, { method: "PATCH" });
     if (!res.ok) {
@@ -51,6 +56,7 @@ export default function ArticlesClient({ articles }: Props) {
   return (
     <ul className={`space-y-3 ${isPending ? "opacity-60" : ""}`}>
       {articles.map((article) => {
+        // 表示用にドメイン名だけ取り出す。不正 URL でも落とさず空表示にする。
         let hostname = "";
         try { hostname = new URL(article.url).hostname; } catch {}
 

@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import ArticlesClient from "./ArticlesClient";
 
+// 記事一覧ページ。?status で未読／既読を絞り込み、一覧の見出しと
+// データを用意してクライアント(ArticlesClient)へ渡す。
 export default async function ArticlesPage({
   searchParams,
 }: {
@@ -10,6 +12,7 @@ export default async function ArticlesPage({
 }) {
   const session = await auth();
   const { status } = await searchParams;
+  // 不正な status 値はフィルタなし扱いにして全件表示する。
   const filter = status === "unread" || status === "done" ? status : undefined;
 
   const articles = await prisma.article.findMany({

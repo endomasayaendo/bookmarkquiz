@@ -5,10 +5,16 @@ import { getBookmarkletUserId } from "@/lib/bookmarklet-auth";
 import { CORS_HEADERS, corsPreflightResponse } from "@/lib/cors";
 import { isAllowedArticleUrl } from "@/lib/article-content";
 
+// 記事の保存（POST=「あとで読む」登録）と一覧取得（GET）を担う API。
+// POST はブックマークレットからも叩かれるため CORS とトークン認証に対応する。
+
 export function OPTIONS() {
   return corsPreflightResponse();
 }
 
+// 記事を未読として登録する。Web セッションと、ブックマークレットの
+// Bearer トークンの両方を認証手段として受け付ける。
+// 同一ユーザー×同一 URL は upsert で重複登録を防ぐ。
 export async function POST(req: NextRequest) {
   const session = await auth();
   const userId = session?.user?.id ?? (await getBookmarkletUserId(req));
@@ -40,6 +46,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(article, { status: 201, headers: CORS_HEADERS });
 }
 
+// ログインユーザーの記事一覧を返す。?status=unread|done で絞り込み可能。
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {

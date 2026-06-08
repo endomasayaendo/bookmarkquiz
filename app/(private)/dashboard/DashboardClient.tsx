@@ -11,9 +11,12 @@ type Props = {
   onboardingCompleted: boolean;
 };
 
+// ダッシュボードの表示と遷移を担うクライアントコンポーネント。
+// 未読／既読の件数表示、クイズ・記事一覧への導線、サインアウトを提供する。
 export default function DashboardClient({ unreadCount, doneCount, onboardingCompleted }: Props) {
   const router = useRouter();
 
+  // オンボーディング未完了ならダッシュボードを見せず設定画面へ誘導する。
   useEffect(() => {
     if (!onboardingCompleted) {
       router.replace("/onboarding");

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+// オンボーディング完了を記録する API。以降ダッシュボードは
+// /onboarding へリダイレクトしなくなる。
 export async function POST() {
   const session = await auth();
   if (!session?.user?.id) {

@@ -5,6 +5,12 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import OnboardingClient from "./OnboardingClient";
 
+// オンボーディングのサーバーコンポーネント。ユーザーのトークンを用意し、
+// ブックマークレットのテンプレートに埋め込んで実行可能な javascript: URL を
+// 組み立て、クライアントへ渡す。
+
+// テンプレート内のプレースホルダ(__APP_URL__/__TOKEN__)を実値に置換し、
+// 空白を畳んで javascript: ブックマークレット URL を生成する。
 function buildBookmarklet(template: string, appUrl: string, token: string): string {
   const js = template
     .replace(/__APP_URL__/g, appUrl)

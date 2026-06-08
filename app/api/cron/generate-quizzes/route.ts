@@ -3,6 +3,10 @@ import Groq from "groq-sdk";
 import { prisma } from "@/lib/prisma";
 import { parseQuizzes } from "@/lib/quiz-parser";
 
+// 定期実行(Cron)で、直近に既読化された記事から LLM で4択クイズを生成する API。
+// CRON_SECRET による認証 → 対象記事抽出 → Groq でクイズ生成 → 保存、を行う。
+
+// 記事タイトルと本文から、JSON 配列のみを返すよう指示する LLM プロンプト。
 const PROMPT = (title: string, body: string) => `
 以下の記事から4択クイズを3問作成してください。
 記事タイトル: ${title}
@@ -22,6 +26,7 @@ answerは正解の選択肢のインデックス（0〜3）です。
 `;
 
 export async function GET(req: NextRequest) {
+  // Cron 認証。`Bearer <secret>` でも生の secret でも受け付ける。
   const authHeader = req.headers.get("Authorization") ?? "";
   const secret = authHeader.startsWith("Bearer ")
     ? authHeader.slice(7)
@@ -32,6 +37,8 @@ export async function GET(req: NextRequest) {
 
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+  // 対象は「直近24時間に既読化され・本文があり・まだクイズ未生成」の記事。
+  // quizzes: { none: {} } で重複生成を防ぐ。
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   const articles = await prisma.article.findMany({
@@ -51,8 +58,10 @@ export async function GET(req: NextRequest) {
     errorMessages: string[];
   } = { generated: 0, skipped: 0, errors: 0, errorMessages: [] };
 
+  // 記事ごとに生成。1件失敗しても他は続行できるよう try/catch で個別に集計する。
   for (const article of articles) {
     try {
+      // LLM 入力トークン量を抑えるため本文は先頭 8000 文字までに制限。
       const prompt = PROMPT(article.title, article.bodyText!.slice(0, 8000));
       const completion = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",

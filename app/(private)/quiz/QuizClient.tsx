@@ -17,14 +17,17 @@ type Props = {
   allAnswered: boolean;
 };
 
+// クイズ出題のクライアントコンポーネント。
+// 未回答クイズを1問ずつ出題し、選択肢のクリックで採点 API を呼んで
+// 正誤・解説を表示する。全問終了後は復習モード（直近の全問再挑戦）へ切替可能。
 export default function QuizClient({ quizzes, allQuizzes, allAnswered }: Props) {
-  const [retry, setRetry] = useState(false);
-  const [index, setIndex] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [result, setResult] = useState<Result | null>(null);
-  const [score, setScore] = useState(0);
-  const [finished, setFinished] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [retry, setRetry] = useState(false); // 復習モードか
+  const [index, setIndex] = useState(0); // 現在の問題番号
+  const [selected, setSelected] = useState<number | null>(null); // 選んだ選択肢
+  const [result, setResult] = useState<Result | null>(null); // 採点結果
+  const [score, setScore] = useState(0); // 正解数
+  const [finished, setFinished] = useState(false); // 全問終了したか
+  const [loading, setLoading] = useState(false); // 採点 API 通信中
 
   if (allAnswered && !retry) {
     return (
@@ -47,6 +50,7 @@ export default function QuizClient({ quizzes, allQuizzes, allAnswered }: Props) 
     );
   }
 
+  // 通常は未回答クイズ、復習モードなら直近の全クイズを出題対象にする。
   const activeQuizzes = retry ? allQuizzes : quizzes;
 
   if (activeQuizzes.length === 0) {
@@ -89,6 +93,7 @@ export default function QuizClient({ quizzes, allQuizzes, allAnswered }: Props) 
 
   const quiz = activeQuizzes[index];
 
+  // 選択肢を選んだら採点 API を呼ぶ。二重回答・連打は冒頭でガードする。
   async function handleSelect(choiceIndex: number) {
     if (selected !== null || loading) return;
     setSelected(choiceIndex);
@@ -105,6 +110,7 @@ export default function QuizClient({ quizzes, allQuizzes, allAnswered }: Props) 
     setLoading(false);
   }
 
+  // 次の問題へ。最後ならば結果画面へ、それ以外は選択状態をリセットして進む。
   function handleNext() {
     if (index + 1 >= activeQuizzes.length) {
       setFinished(true);

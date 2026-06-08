@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
 
+// 定期実行(Cron)で、新しいクイズが生成されたユーザーへ通知メールを送る API。
+// generate-quizzes の後に呼ばれる想定。
 export async function POST(req: NextRequest) {
+  // Cron 認証。こちらは Authorization ヘッダの生値を CRON_SECRET と比較する。
   const secret = req.headers.get("Authorization");
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -10,6 +13,7 @@ export async function POST(req: NextRequest) {
 
   const resend = new Resend(process.env.RESEND_API_KEY);
 
+  // 直近24時間に生成されたクイズを持つ記事のオーナー（メールあり）を抽出。
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   const users = await prisma.user.findMany({
@@ -29,6 +33,7 @@ export async function POST(req: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
   const results = { sent: 0, errors: 0 };
 
+  // ユーザーごとに送信。1人分の送信失敗が全体を止めないよう個別に集計する。
   for (const user of users) {
     try {
       await resend.emails.send({

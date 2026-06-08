@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import DashboardClient from "./DashboardClient";
 
+// ダッシュボードのサーバーコンポーネント。記事の未読／既読件数と
+// オンボーディング完了状態を取得してクライアントへ渡す。
 export default async function DashboardPage() {
   const session = await auth();
 
