@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { CORS_HEADERS, corsPreflightResponse } from "@/lib/cors";
-import { fetchBodyText, isAllowedArticleUrl } from "@/lib/article-content";
+import { isAllowedArticleUrl } from "@/lib/articles/url-rules";
+import { fetchBodyText } from "@/lib/articles/fetch-body";
 import { withUserOrBookmarklet } from "@/lib/api/auth";
 
 // 記事を「読んだ」として登録する API（ブックマークレットの「読んだ」ボタン用）。

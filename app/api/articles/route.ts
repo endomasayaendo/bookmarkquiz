@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { CORS_HEADERS, corsPreflightResponse } from "@/lib/cors";
-import { isAllowedArticleUrl } from "@/lib/article-content";
+import { isAllowedArticleUrl } from "@/lib/articles/url-rules";
 import { withSession, withUserOrBookmarklet } from "@/lib/api/auth";
 
 // 記事の保存（POST=「あとで読む」登録）と一覧取得（GET）を担う API。

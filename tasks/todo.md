@@ -22,9 +22,10 @@
 - [x] 検証: test 57 / lint エラー0
 
 ## Phase 3: article-content 3分割
-- [ ] `lib/articles/url-rules.ts` / `extract.ts` / `fetch-body.ts`
-- [ ] import更新4箇所、旧ファイル削除
-- [ ] fetchFn注入テスト追加
+- [x] `lib/articles/url-rules.ts`（URL検証・OCP）/ `extract.ts`（cheerio純粋関数）/ `fetch-body.ts`（I/O・SSRF防御・fetchFn注入可）
+- [x] import更新3ルート、旧 lib/article-content.ts 削除
+- [x] テストも3ファイルに分割（url-rules / extract / fetch-body）+ fetchFn注入・Disallowedケース追加
+- [x] 検証: test 59 / lint エラー0 / build 成功
 
 ## Phase 4: フロント共通部品 + Articles/Onboarding
 - [ ] CenteredCard / lib/client/api.ts / useApiAction

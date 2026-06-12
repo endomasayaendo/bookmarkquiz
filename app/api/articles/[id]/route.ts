@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { fetchBodyText } from "@/lib/article-content";
+import { fetchBodyText } from "@/lib/articles/fetch-body";
 import { withSession } from "@/lib/api/auth";
 
 // 個別記事の削除(DELETE)と既読/未読トグル(PATCH)を担う API。
