@@ -44,6 +44,39 @@
 - [x] 検証: test 78 / lint エラー0 / build 成功
 
 ## Phase 6: 最終検証
-- [ ] test / lint / build / e2e
-- [ ] git diff レビュー
-- [ ] レビューセクション追記
+- [x] test 78 / lint エラー0 / build 成功
+- [x] e2e 3本（onboarding / articles / quiz）パス
+- [x] git diff main レビュー（APIレスポンスshape・文言・class文字列に差分なし）
+- [x] レビューセクション追記
+
+---
+
+## レビュー
+
+### 成果
+SOLID原則に沿った pure refactor を6フェーズで完了。挙動は完全維持。
+
+- **テスト**: 37件 → **78件**（+41）。従来テスト不在だった cron ロジック
+  （quiz生成・通知）とフロント抽出ロジックにユニットテストが付いた。
+- **e2e**: onboarding / articles / quiz の3本すべてパス（挙動維持の実証）。
+- **lint/build**: エラー0（既存の `<img>` 警告1件のみ、件数不変）。
+
+### 主な改善（SOLID対応）
+- **SRP/DRY**: 認証チェックを `lib/api/auth.ts`（withSession / withUserOrBookmarklet）に集約。
+  cron 認証を `lib/api/cron-auth.ts` に統一。
+- **SRP/DIP**: cron の業務ロジックを `lib/services/`（quiz-generation / notify）に抽出し、
+  LLM/メールクライアントを注入可能に（テスト時 env 不要）。
+- **SRP/OCP**: `lib/article-content.ts` を url-rules / extract / fetch-body に3分割。
+  サイト追加は配列1行追記で済む。
+- **フロント**: callApi / useApiAction / ArticleListItem / BookmarkletButton /
+  CenteredCard / quiz の reducer・フック・純関数を抽出。
+  QuizClient 189→約130行、ArticlesClient 111→59行。client→serverページ型依存も解消。
+
+### 設計判断
+- クラス・DIコンテナ・Repository層は導入せず関数ベースに留めた（過剰設計回避）。
+- alert/confirm の挙動・class文字列・APIレスポンスshapeは意図的に不変。
+- notify の cron 認証のみ「生値→Bearer許容」のスーパーセットに統一（後方互換）。
+
+### 残課題（本リファクタ範囲外）
+- `tasks/lessons.md` は未整備（今回ユーザー修正による学びの記録対象なし）。
+- ブランチ `refactor/solid-principles` は未マージ・未push。
