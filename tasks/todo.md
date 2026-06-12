@@ -36,9 +36,12 @@
 - 備考: CenteredCard は実利用が QuizClient なので Phase 5 で作成。e2e(articles/onboarding) は Phase 6 でまとめて実行。
 
 ## Phase 5: QuizClient分解
-- [ ] quiz/api.ts / session-reducer.ts / useQuizSession.ts / choice-style.ts
-- [ ] QuizItem型をconfig.tsへ
-- [ ] 新規テスト quiz-session-reducer / choice-style
+- [x] quiz/api.ts（submitQuizAnswer）/ session-reducer.ts（純粋reducer）/ useQuizSession.ts / choice-style.ts
+- [x] components/CenteredCard.tsx（空状態・結果の全画面カード共通化）
+- [x] QuizItem型をconfig.tsへ移動（client→serverページ依存を解消）
+- [x] QuizClient 189→約130行に縮小、state機械をフックへ委譲
+- [x] 新規テスト quiz-session-reducer（7ケース）/ choice-style（4ケース）
+- [x] 検証: test 78 / lint エラー0 / build 成功
 
 ## Phase 6: 最終検証
 - [ ] test / lint / build / e2e
