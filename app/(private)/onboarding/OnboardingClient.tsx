@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { callApi } from "@/lib/client/api";
+import { useApiAction } from "@/hooks/useApiAction";
+import BookmarkletButton from "./BookmarkletButton";
 
 type Props = {
   laterHref: string;
@@ -13,18 +16,9 @@ type Props = {
 // ドラッグ登録させ、チュートリアル演出と完了・トークンリセット操作を担う。
 export default function OnboardingClient({ laterHref, doneHref }: Props) {
   const [checked, setChecked] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const { isPending, run } = useApiAction();
   const [tutorialStep, setTutorialStep] = useState<1 | 2 | null>(1);
   const router = useRouter();
-  const laterRef = useRef<HTMLAnchorElement>(null);
-  const doneRef = useRef<HTMLAnchorElement>(null);
-
-  // javascript: URL は JSX の href に直接書くと React/リンタに嫌われるため、
-  // マウント後に DOM 属性として直接セットして回避する。
-  useEffect(() => {
-    laterRef.current?.setAttribute("href", laterHref);
-    doneRef.current?.setAttribute("href", doneHref);
-  }, [laterHref, doneHref]);
 
   // チュートリアルのハイライトを 3秒ごとに 1→2→終了 と自動で進める。
   useEffect(() => {
@@ -40,16 +34,10 @@ export default function OnboardingClient({ laterHref, doneHref }: Props) {
     setTutorialStep((s) => (s === step ? (step === 1 ? 2 : null) : s));
   }
 
-  // ボタンは「ドラッグして登録」するもの。クリックは誤操作なので案内を出す。
-  function handleBookmarkletClick(e: React.MouseEvent) {
-    e.preventDefault();
-    alert("ドラッグしてブックマークバーに追加してください");
-  }
-
   // 完了を記録してダッシュボードへ。
   async function handleStart() {
-    const res = await fetch("/api/onboarding/complete", { method: "POST" });
-    if (!res.ok) return;
+    const { ok } = await callApi("/api/onboarding/complete", { method: "POST" });
+    if (!ok) return;
     router.push("/dashboard");
   }
 
@@ -57,8 +45,8 @@ export default function OnboardingClient({ laterHref, doneHref }: Props) {
   // 新トークン入りのブックマークレットを表示する。
   function handleReset() {
     if (!confirm("トークンをリセットすると、古いブックマークレットは使えなくなります。続けますか？")) return;
-    startTransition(async () => {
-      await fetch("/api/token/reset", { method: "POST" });
+    run(async () => {
+      await callApi("/api/token/reset", { method: "POST" });
       router.refresh();
     });
   }
@@ -107,26 +95,22 @@ export default function OnboardingClient({ laterHref, doneHref }: Props) {
 
         {/* ブックマークレットボタン */}
         <div className="mb-8 flex gap-4">
-          <a
-            ref={laterRef}
-            onClick={handleBookmarkletClick}
+          <BookmarkletButton
+            href={laterHref}
+            label="あとで読む"
+            highlighted={tutorialStep === 1}
+            baseClass="bg-blue-600 hover:bg-blue-500"
+            ringClass="ring-blue-300"
             onDragStart={() => handleDragStart(1)}
-            className={`flex-1 rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-medium text-white hover:bg-blue-500 cursor-grab transition-all duration-300 ${
-              tutorialStep === 1 ? "ring-4 ring-blue-300 ring-offset-2 scale-105" : ""
-            }`}
-          >
-            あとで読む
-          </a>
-          <a
-            ref={doneRef}
-            onClick={handleBookmarkletClick}
+          />
+          <BookmarkletButton
+            href={doneHref}
+            label="読んだ"
+            highlighted={tutorialStep === 2}
+            baseClass="bg-green-600 hover:bg-green-500"
+            ringClass="ring-green-300"
             onDragStart={() => handleDragStart(2)}
-            className={`flex-1 rounded-lg bg-green-600 px-4 py-3 text-center text-sm font-medium text-white hover:bg-green-500 cursor-grab transition-all duration-300 ${
-              tutorialStep === 2 ? "ring-4 ring-green-300 ring-offset-2 scale-105" : ""
-            }`}
-          >
-            読んだ
-          </a>
+          />
         </div>
 
         <label className="mb-6 flex cursor-pointer items-center gap-3">

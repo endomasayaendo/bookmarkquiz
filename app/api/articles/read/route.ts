@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getBookmarkletUserId } from "@/lib/bookmarklet-auth";
 import { CORS_HEADERS, corsPreflightResponse } from "@/lib/cors";
-import { fetchBodyText, isAllowedArticleUrl } from "@/lib/article-content";
+import { isAllowedArticleUrl } from "@/lib/articles/url-rules";
+import { fetchBodyText } from "@/lib/articles/fetch-body";
+import { withUserOrBookmarklet } from "@/lib/api/auth";
 
 // 記事を「読んだ」として登録する API（ブックマークレットの「読んだ」ボタン用）。
 // /api/articles との違いは、本文を実際に取得してクイズ生成の元データを保存する点。
@@ -15,13 +15,7 @@ export function OPTIONS() {
 // 記事を既読(done)で登録／更新する。登録時に本文テキストを取得して保存し、
 // 後続の Cron（generate-quizzes）がこの bodyText からクイズを生成する。
 // 未登録なら create、既存なら done へ更新する upsert。
-export async function POST(req: NextRequest) {
-  const session = await auth();
-  const userId = session?.user?.id ?? (await getBookmarkletUserId(req));
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: CORS_HEADERS });
-  }
-
+export const POST = withUserOrBookmarklet(async (userId, req) => {
   const { url, title, ogpImage } = await req.json();
   if (!url || !title) {
     return NextResponse.json(
@@ -54,4 +48,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(article, { headers: CORS_HEADERS });
-}
+});

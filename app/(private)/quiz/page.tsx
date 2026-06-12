@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import QuizClient from "./QuizClient";
 
-import { QUIZ_LOOKBACK_DAYS, QUIZ_LIMIT } from "./config";
+import { QUIZ_LOOKBACK_DAYS, QUIZ_LIMIT, type QuizItem } from "./config";
 
 // クイズ画面のサーバーコンポーネント。出題データを DB から取得して
 // クライアント(QuizClient)へ渡す。正解(answer)・解説は採点時に
@@ -44,11 +44,3 @@ export default async function QuizPage() {
 
   return <QuizClient quizzes={quizzes as QuizItem[]} allQuizzes={allQuizzes as QuizItem[]} allAnswered={allAnswered} />;
 }
-
-export type QuizItem = {
-  id: string;
-  question: string;
-  choices: string[];
-  type: string;
-  article: { title: string };
-};

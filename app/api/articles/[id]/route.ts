@@ -1,9 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { fetchBodyText } from "@/lib/article-content";
+import { fetchBodyText } from "@/lib/articles/fetch-body";
+import { withSession } from "@/lib/api/auth";
 
 // 個別記事の削除(DELETE)と既読/未読トグル(PATCH)を担う API。
+
+type ArticleParams = { params: Promise<{ id: string }> };
 
 // 指定 ID の記事を「本人のものに限定して」取得する。
 // userId 条件を必ず付けることで他人の記事を操作できないようにする（認可）。
@@ -12,32 +14,22 @@ async function getAuthorizedArticle(id: string, userId: string) {
 }
 
 // 記事を削除する。本人の記事でなければ 404。
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const DELETE = withSession<ArticleParams>(async (userId, req, { params }) => {
   const { id } = await params;
-  const article = await getAuthorizedArticle(id, session.user.id);
+  const article = await getAuthorizedArticle(id, userId);
   if (!article) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   await prisma.article.delete({ where: { id } });
   return new Response(null, { status: 204 });
-}
+});
 
 // 既読/未読を切り替える。未読→既読化のときに本文未取得なら取得して保存し、
 // クイズ生成の元データを揃える。本文取得に失敗したらステータスも変えず 502。
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const PATCH = withSession<ArticleParams>(async (userId, req, { params }) => {
   const { id } = await params;
-  const article = await getAuthorizedArticle(id, session.user.id);
+  const article = await getAuthorizedArticle(id, userId);
   if (!article) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -62,4 +54,4 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   });
 
   return NextResponse.json(updated);
-}
+});
