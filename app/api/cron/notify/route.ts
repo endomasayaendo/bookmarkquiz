@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { prisma } from "@/lib/prisma";
+import { isAuthorizedCronRequest } from "@/lib/api/cron-auth";
 
 // 定期実行(Cron)で、新しいクイズが生成されたユーザーへ通知メールを送る API。
 // generate-quizzes の後に呼ばれる想定。
 export async function POST(req: NextRequest) {
-  // Cron 認証。こちらは Authorization ヘッダの生値を CRON_SECRET と比較する。
-  const secret = req.headers.get("Authorization");
-  if (secret !== process.env.CRON_SECRET) {
+  if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

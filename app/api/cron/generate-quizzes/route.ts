@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Groq from "groq-sdk";
 import { prisma } from "@/lib/prisma";
 import { parseQuizzes } from "@/lib/quiz-parser";
+import { isAuthorizedCronRequest } from "@/lib/api/cron-auth";
 
 // 定期実行(Cron)で、直近に既読化された記事から LLM で4択クイズを生成する API。
 // CRON_SECRET による認証 → 対象記事抽出 → Groq でクイズ生成 → 保存、を行う。
@@ -26,12 +27,7 @@ answerは正解の選択肢のインデックス（0〜3）です。
 `;
 
 export async function GET(req: NextRequest) {
-  // Cron 認証。`Bearer <secret>` でも生の secret でも受け付ける。
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const secret = authHeader.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : authHeader;
-  if (secret !== process.env.CRON_SECRET) {
+  if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
