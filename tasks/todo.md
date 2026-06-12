@@ -15,10 +15,11 @@
 - 備考: notify の cron 認証が「生値のみ」→「Bearer or 生値」のスーパーセットに統一（後方互換）。
 
 ## Phase 2: cronサービス抽出
-- [ ] `lib/services/quiz-generation.ts`（LLM注入可）
-- [ ] `lib/services/notify.ts`（mailer注入可）
-- [ ] cron 2ルートを薄く
-- [ ] 新規テスト quiz-generation / notify
+- [x] `lib/services/quiz-generation.ts`（LLM注入可・遅延生成）
+- [x] `lib/services/notify.ts`（mailer注入可・遅延生成）
+- [x] cron 2ルートを「認証→サービス呼び出し」の薄い形に
+- [x] 新規テスト quiz-generation（5ケース）/ notify（3ケース）
+- [x] 検証: test 57 / lint エラー0
 
 ## Phase 3: article-content 3分割
 - [ ] `lib/articles/url-rules.ts` / `extract.ts` / `fetch-body.ts`
