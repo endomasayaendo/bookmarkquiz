@@ -27,6 +27,8 @@
 # AI assistant instructions
 CLAUDE.md
 AGENTS.md
+# AI ワークフロー用の作業メモ（todo / lessons）はコミットしない
+/tasks
 
 # debug
 npm-debug.log*
