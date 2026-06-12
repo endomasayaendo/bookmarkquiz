@@ -1,16 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
-
-type Article = {
-  id: string;
-  title: string;
-  url: string;
-  status: string;
-  createdAt: Date;
-  ogpImage: string | null;
-};
+import { callApi } from "@/lib/client/api";
+import { useApiAction } from "@/hooks/useApiAction";
+import type { Article } from "./article-style";
+import ArticleListItem from "./ArticleListItem";
 
 type Props = {
   articles: Article[];
@@ -18,22 +12,21 @@ type Props = {
 
 // 記事一覧の操作を担うクライアントコンポーネント。
 // 既読/未読トグル・削除を API に投げ、成功したらサーバーコンポーネントを
-// 再取得(refresh)して最新状態を反映する。
+// 再取得(refresh)して最新状態を反映する。表示は ArticleListItem に委譲する。
 export default function ArticlesClient({ articles }: Props) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const { isPending, run } = useApiAction();
 
   // サーバーコンポーネントを再実行して一覧を最新化する。
   function refresh() {
-    startTransition(() => { router.refresh(); });
+    run(() => router.refresh());
   }
 
   // 既読/未読を切り替える。本文取得失敗(502)などはサーバーのメッセージを表示。
   async function handleToggle(id: string) {
-    const res = await fetch(`/api/articles/${id}`, { method: "PATCH" });
-    if (!res.ok) {
-      const { error } = await res.json().catch(() => ({ error: "ステータスの更新に失敗しました" }));
-      alert(error);
+    const { ok, error } = await callApi(`/api/articles/${id}`, { method: "PATCH" });
+    if (!ok) {
+      alert(error ?? "ステータスの更新に失敗しました");
       return;
     }
     refresh();
@@ -41,7 +34,7 @@ export default function ArticlesClient({ articles }: Props) {
 
   async function handleDelete(id: string, title: string) {
     if (!confirm(`「${title}」を削除しますか？`)) return;
-    await fetch(`/api/articles/${id}`, { method: "DELETE" });
+    await callApi(`/api/articles/${id}`, { method: "DELETE" });
     refresh();
   }
 
@@ -55,57 +48,14 @@ export default function ArticlesClient({ articles }: Props) {
 
   return (
     <ul className={`space-y-3 ${isPending ? "opacity-60" : ""}`}>
-      {articles.map((article) => {
-        // 表示用にドメイン名だけ取り出す。不正 URL でも落とさず空表示にする。
-        let hostname = "";
-        try { hostname = new URL(article.url).hostname; } catch {}
-
-        return (
-          <li key={article.id} className={`rounded-2xl bg-white p-4 shadow-sm border-l-4 ${article.status === "done" ? "border-green-400" : "border-blue-400"}`}>
-            <a
-              href={article.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mb-2 flex gap-3 hover:opacity-80 transition-opacity"
-            >
-              {article.ogpImage && (
-                <img
-                  src={article.ogpImage}
-                  alt=""
-                  className="h-40 w-60 flex-shrink-0 rounded-lg object-contain bg-gray-100"
-                />
-              )}
-              <span className="text-sm font-medium text-gray-900 line-clamp-3">
-                {article.title}
-              </span>
-            </a>
-
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">{hostname}</span>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleToggle(article.id)}
-                  className={`rounded border px-2 py-0.5 text-xs transition-colors ${
-                    article.status === "done"
-                      ? "border-blue-300 text-blue-600 hover:border-blue-500 hover:text-blue-800"
-                      : "border-green-300 text-green-600 hover:border-green-500 hover:text-green-800"
-                  }`}
-                >
-                  {article.status === "done" ? "未読に戻す" : "読んだにする"}
-                </button>
-
-                <button
-                  onClick={() => handleDelete(article.id, article.title)}
-                  className="rounded border border-red-200 px-2 py-0.5 text-xs text-red-400 hover:border-red-400 hover:text-red-600"
-                >
-                  削除
-                </button>
-              </div>
-            </div>
-          </li>
-        );
-      })}
+      {articles.map((article) => (
+        <ArticleListItem
+          key={article.id}
+          article={article}
+          onToggle={handleToggle}
+          onDelete={handleDelete}
+        />
+      ))}
     </ul>
   );
 }

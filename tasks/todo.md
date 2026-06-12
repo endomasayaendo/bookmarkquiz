@@ -28,10 +28,12 @@
 - [x] 検証: test 59 / lint エラー0 / build 成功
 
 ## Phase 4: フロント共通部品 + Articles/Onboarding
-- [ ] CenteredCard / lib/client/api.ts / useApiAction
-- [ ] ArticleListItem / BookmarkletButton
-- [ ] ArticlesClient / OnboardingClient 適用
-- [ ] 新規テスト client-api / article-list-item
+- [x] `lib/client/api.ts`（callApi）/ `hooks/useApiAction.ts`
+- [x] `articles/article-style.ts`（純関数）/ `ArticleListItem.tsx` / `onboarding/BookmarkletButton.tsx`
+- [x] ArticlesClient（111→59行）/ OnboardingClient 適用
+- [x] 新規テスト client-api（4ケース）/ article-style（4ケース）
+- [x] 検証: test 67 / lint エラー0 / build 成功
+- 備考: CenteredCard は実利用が QuizClient なので Phase 5 で作成。e2e(articles/onboarding) は Phase 6 でまとめて実行。
 
 ## Phase 5: QuizClient分解
 - [ ] quiz/api.ts / session-reducer.ts / useQuizSession.ts / choice-style.ts
