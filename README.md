@@ -90,39 +90,53 @@ npm install
 
 ### A. Docker でサクッと試す（おすすめ・外部アカウント不要）
 
-DB はローカルの Docker Postgres、ログインは開発用の **Dev Login**、クイズは **シード** で投入するので、
-**Supabase / GitHub OAuth / Groq はいずれも不要**です（要 [Docker Desktop](https://www.docker.com/products/docker-desktop/)）。
+ローカルの Docker Postgres ＋ 開発用ログイン（**Dev Login**）＋ デモデータ（シード）で動かすので、
+**Supabase / GitHub OAuth / Groq のアカウントは一切不要**です。
 
-`.env` を作成（GitHub の値はプレースホルダでOK。Dev Login は使いません）:
+**前提**: [Node.js](https://nodejs.org/)（18以上）と [Docker Desktop](https://www.docker.com/products/docker-desktop/) をインストールし、**Docker Desktop を起動しておく**こと。
+
+#### 1. `.env` を作成
+
+プロジェクト直下に `.env` ファイルを新規作成して、以下を貼り付けます。
+（データベースは Docker のローカル DB が自動で使われるため、`.env` に DB の設定は不要です）
 
 ```env
-DATABASE_URL=postgresql://test:test@localhost:5433/bookmarkquiz_test
-AUTH_SECRET=            # openssl rand -base64 32 で生成
+AUTH_SECRET=xxxxxxxx                     # 任意の長い文字列。例: openssl rand -base64 32 で生成
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 CRON_SECRET=dev
-GITHUB_CLIENT_ID=dummy
+GITHUB_CLIENT_ID=dummy                   # Dev Login では使わないのでダミーでOK
 GITHUB_CLIENT_SECRET=dummy
-# GROQ_API_KEY=        # 「新しいクイズを自分で生成」する場合のみ必要
+# GROQ_API_KEY=                          # 自分でクイズ生成を試すときだけ設定（任意）
 ```
 
-ローカル Postgres を起動 → スキーマ反映 → デモデータ投入:
+#### 2. 起動
+
+次の1コマンドで「Docker で Postgres 起動 → スキーマ作成 → デモデータ投入 → アプリ起動」までまとめて実行します。
 
 ```bash
-npm run db:test:up     # Docker で Postgres を起動
-npx prisma db push     # スキーマを反映
-npm run db:seed        # デモのユーザー・記事・クイズを投入
+npm run dev:fresh
 ```
 
-起動してログイン:
+#### 3. ブラウザで触る
+
+`http://localhost:3000` を開き、ログイン画面の **「Dev Login（開発用）」** ボタンで入ります
+（このボタンは開発時だけ表示されます）。
+
+初回はオンボーディング画面が出ます。ブックマークレット2つをブックマークバーにドラッグして
+「はじめる」を押すと、ダッシュボードに進みます。デモの記事・クイズが入っているので、
+記事一覧からクイズ回答まで一通り試せます
+（設置したブックマークレットは、実際の Qiita / Zenn の記事ページでそのまま使えます）。
+
+---
+
+**2回目以降**（Docker コンテナを起動したまま）は、これだけで起動できます:
 
 ```bash
-npm run dev
+npm run dev:local
 ```
 
-http://localhost:3000 を開き、ログイン画面の **「Dev Login（開発用）」** で入ります
-（`NODE_ENV=development` のときだけ表示）。デモの記事とクイズが入っているので、記事一覧からクイズ回答まで一通り触れます。
-
-後片付けは `npm run db:test:down`（このローカルDBは揮発するので、次回は `npm run db:seed` で復元できます）。
+**終了・後片付け**: `npm run db:test:down` でローカル DB を停止します（中のデータは消えます）。
+また試すときは `npm run dev:fresh` を実行すれば、デモデータごと一式そろって起動します。
 
 ### B. Supabase で動かす（本番に近い構成）
 
