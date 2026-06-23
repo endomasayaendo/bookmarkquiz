@@ -28,6 +28,9 @@
 CLAUDE.md
 AGENTS.md
 
+# AI workflow scratch（tasks/todo.md・lessons.md など。追跡しない）
+tasks/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
