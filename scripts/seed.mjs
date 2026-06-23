@@ -76,10 +76,13 @@ await client.connect();
 try {
   // demoユーザーを作り直す（onDelete: Cascade で記事・クイズ・回答も消える）。
   // 何度実行しても同じ初期状態になる。
+  // onboarding_completed=false にして、ローカルでもログイン直後に
+  // オンボーディング（ブックマークレット設置）から一周体験できるようにする。
+  // 完了後はシード済みの記事・クイズが入ったダッシュボードに着く。
   await client.query("DELETE FROM users WHERE email = $1", [DEMO_EMAIL]);
   await client.query(
     `INSERT INTO users (id, email, name, onboarding_completed)
-     VALUES ($1, $2, 'Demo User', true)`,
+     VALUES ($1, $2, 'Demo User', false)`,
     [USER_ID, DEMO_EMAIL],
   );
 
