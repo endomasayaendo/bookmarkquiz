@@ -103,6 +103,8 @@ model Quiz {
   explanation String
   type        QuizType
   createdAt   DateTime @default(now()) @map("created_at")
+  // 通知メールを送った時刻。null は未通知（notify Cron の二重送信防止に使う）。
+  notifiedAt  DateTime? @map("notified_at")
 
   article     Article    @relation(fields: [articleId], references: [id], onDelete: Cascade)
   quizAnswers QuizAnswer[]
