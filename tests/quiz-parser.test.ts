@@ -51,6 +51,17 @@ describe("parseQuizzes", () => {
     expect(parseQuizzes(text)).toEqual([validQuiz]);
   });
 
+  it("trims whitespace from accepted quiz text", () => {
+    const padded = {
+      ...validQuiz,
+      question: `  ${validQuiz.question} `,
+      choices: validQuiz.choices.map((c) => ` ${c}\n`),
+      explanation: `${validQuiz.explanation}  `,
+    };
+
+    expect(parseQuizzes(JSON.stringify([padded]))).toEqual([validQuiz]);
+  });
+
   it("throws when no JSON array exists", () => {
     expect(() => parseQuizzes("No structured data here")).toThrow("No JSON array found");
   });
