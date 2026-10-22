@@ -80,7 +80,7 @@ describe("/api/articles", () => {
     findManyMock.mockResolvedValue([{ id: "article-1" }]);
     const req = new Request("https://example.com/api/articles?status=done") as never;
 
-    const res = await GET(req);
+    const res = await GET(req, undefined);
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual([{ id: "article-1" }]);
@@ -94,7 +94,7 @@ describe("/api/articles", () => {
     authMock.mockResolvedValue({ user: { id: "user-1" } });
     const req = new Request("https://example.com/api/articles?status=bogus") as never;
 
-    const res = await GET(req);
+    const res = await GET(req, undefined);
 
     expect(res.status).toBe(400);
     expect(findManyMock).not.toHaveBeenCalled();
