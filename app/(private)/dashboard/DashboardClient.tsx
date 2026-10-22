@@ -4,16 +4,17 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import type { DashboardStats } from "@/lib/services/dashboard-stats";
 
 type Props = {
-  unreadCount: number;
-  doneCount: number;
+  stats: DashboardStats;
   onboardingCompleted: boolean;
 };
 
 // ダッシュボードの表示と遷移を担うクライアントコンポーネント。
-// 未読／既読の件数表示、クイズ・記事一覧への導線、サインアウトを提供する。
-export default function DashboardClient({ unreadCount, doneCount, onboardingCompleted }: Props) {
+// 未読／既読の件数とクイズの回答状況の表示、クイズ・記事一覧への導線、サインアウトを提供する。
+export default function DashboardClient({ stats, onboardingCompleted }: Props) {
+  const { unreadCount, doneCount, unansweredQuizCount, answerCount, accuracy } = stats;
   const router = useRouter();
 
   // オンボーディング未完了ならダッシュボードを見せず設定画面へ誘導する。
@@ -47,6 +48,27 @@ export default function DashboardClient({ unreadCount, doneCount, onboardingComp
             <p className="text-sm text-green-300">本</p>
           </Link>
         </div>
+
+        <section
+          aria-label="クイズの回答状況"
+          className="mb-6 grid grid-cols-3 gap-2 rounded-2xl bg-white p-4 text-center shadow-sm"
+        >
+          <div>
+            <p className="text-xs text-gray-500">未回答</p>
+            <p className="text-2xl font-bold text-gray-900">{unansweredQuizCount}</p>
+            <p className="text-xs text-gray-400">問</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">回答数</p>
+            <p className="text-2xl font-bold text-gray-900">{answerCount}</p>
+            <p className="text-xs text-gray-400">回</p>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500">正答率</p>
+            <p className="text-2xl font-bold text-gray-900">{accuracy ?? "—"}</p>
+            <p className="text-xs text-gray-400">{accuracy === null ? "未回答" : "%"}</p>
+          </div>
+        </section>
 
         <Link
           href="/quiz"
