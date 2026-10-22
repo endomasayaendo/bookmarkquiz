@@ -143,4 +143,14 @@ describe("/api/articles", () => {
     expect(res.status).toBe(400);
     expect(upsertMock).not.toHaveBeenCalled();
   });
+
+  it("keeps the stored ogpImage when re-registering without one", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+    upsertMock.mockResolvedValue({ id: "article-1" });
+
+    await POST(postRequest({ url: "https://zenn.dev/user/articles/abc", title: "Article" }));
+
+    expect(upsertMock.mock.calls[0][0].update).toEqual({ title: "Article" });
+    expect(upsertMock.mock.calls[0][0].create.ogpImage).toBeNull();
+  });
 });

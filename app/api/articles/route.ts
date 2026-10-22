@@ -36,7 +36,8 @@ export const POST = withUserOrBookmarklet(async (userId, req) => {
 
   const article = await prisma.article.upsert({
     where: { userId_url: { userId, url } },
-    update: { title, ogpImage },
+    // ogpImage が取れなかった再登録で保存済みの画像を消さないよう、あるときだけ更新する。
+    update: { title, ...(ogpImage && { ogpImage }) },
     create: { userId, url, title, ogpImage },
   });
 
