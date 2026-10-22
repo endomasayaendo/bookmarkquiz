@@ -27,6 +27,7 @@ export const POST = withSession<{ params: Promise<{ id: string }> }>(
 
     // 存在しない選択肢への回答は履歴に残さず弾く。
     const choiceCount = Array.isArray(quiz.choices) ? quiz.choices.length : 0;
+    if (choiceCount === 0) console.warn(`Quiz ${quiz.id} has invalid choices data`);
     if (selectedIndex >= choiceCount) {
       return NextResponse.json({ error: "selectedIndex is out of range" }, { status: 400 });
     }

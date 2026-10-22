@@ -20,7 +20,7 @@ export const POST = withUserOrBookmarklet(async (userId, req) => {
   const url = body?.url;
   const title = body?.title;
   const ogpImage = typeof body?.ogpImage === "string" ? body.ogpImage : null;
-  if (typeof url !== "string" || !url || typeof title !== "string" || !title) {
+  if (typeof url !== "string" || !url || typeof title !== "string" || !title.trim()) {
     return NextResponse.json(
       { error: "url and title are required" },
       { status: 400, headers: CORS_HEADERS }

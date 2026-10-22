@@ -123,4 +123,24 @@ describe("/api/articles", () => {
     expect(res.status).toBe(400);
     expect(upsertMock).not.toHaveBeenCalled();
   });
+
+  it("treats an empty status filter as no filter", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+    findManyMock.mockResolvedValue([]);
+    const req = new Request("https://example.com/api/articles?status=") as never;
+
+    const res = await GET(req, undefined);
+
+    expect(res.status).toBe(200);
+    expect(findManyMock.mock.calls[0][0].where).toEqual({ userId: "user-1" });
+  });
+
+  it("rejects a whitespace-only title with 400", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+
+    const res = await POST(postRequest({ url: "https://zenn.dev/user/articles/abc", title: "   " }));
+
+    expect(res.status).toBe(400);
+    expect(upsertMock).not.toHaveBeenCalled();
+  });
 });

@@ -14,12 +14,12 @@ export async function readJsonObject(req: Request): Promise<Record<string, unkno
 }
 
 // クエリパラメータを許可値リストで検証する。
-// 未指定は { ok: true, value: null }、許可値以外は { ok: false }。
+// 未指定・空文字は { ok: true, value: null }（従来どおり絞り込みなし）、許可値以外は { ok: false }。
 export function parseEnumParam<T extends string>(
   value: string | null,
   allowed: readonly T[]
 ): { ok: true; value: T | null } | { ok: false } {
-  if (value === null) return { ok: true, value: null };
+  if (value === null || value === "") return { ok: true, value: null };
   return (allowed as readonly string[]).includes(value)
     ? { ok: true, value: value as T }
     : { ok: false };
