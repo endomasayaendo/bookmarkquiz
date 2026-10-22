@@ -14,7 +14,7 @@ type Props = {
 // ダッシュボードの表示と遷移を担うクライアントコンポーネント。
 // 未読／既読の件数とクイズの回答状況の表示、クイズ・記事一覧への導線、サインアウトを提供する。
 export default function DashboardClient({ stats, onboardingCompleted }: Props) {
-  const { unreadCount, doneCount, unansweredQuizCount, answerCount, accuracy } = stats;
+  const { unreadCount, doneCount, unansweredQuizCount, answeredQuizCount, accuracy } = stats;
   const router = useRouter();
 
   // オンボーディング未完了ならダッシュボードを見せず設定画面へ誘導する。
@@ -59,14 +59,14 @@ export default function DashboardClient({ stats, onboardingCompleted }: Props) {
             <p className="text-xs text-gray-400">問</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">回答数</p>
-            <p className="text-2xl font-bold text-gray-900">{answerCount}</p>
-            <p className="text-xs text-gray-400">回</p>
+            <p className="text-xs text-gray-500">回答済み</p>
+            <p className="text-2xl font-bold text-gray-900">{answeredQuizCount}</p>
+            <p className="text-xs text-gray-400">問</p>
           </div>
           <div>
             <p className="text-xs text-gray-500">正答率</p>
             <p className="text-2xl font-bold text-gray-900">{accuracy ?? "—"}</p>
-            <p className="text-xs text-gray-400">{accuracy === null ? "未回答" : "%"}</p>
+            <p className="text-xs text-gray-400">{accuracy === null ? "回答なし" : "%（初回）"}</p>
           </div>
         </section>
 

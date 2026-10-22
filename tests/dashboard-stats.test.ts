@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import { getDashboardStats } from "@/lib/services/dashboard-stats";
 import { GET } from "@/app/api/dashboard/route";
+import { QUIZ_LOOKBACK_DAYS } from "@/app/(private)/quiz/config";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -9,30 +10,27 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     article: { count: vi.fn() },
     quiz: { count: vi.fn() },
-    quizAnswer: { count: vi.fn() },
+    quizAnswer: { findMany: vi.fn() },
   },
 }));
 
 const authMock = auth as unknown as Mock;
 const articleCountMock = prisma.article.count as unknown as Mock;
 const quizCountMock = prisma.quiz.count as unknown as Mock;
-const answerCountMock = prisma.quizAnswer.count as unknown as Mock;
+const answerFindManyMock = prisma.quizAnswer.findMany as unknown as Mock;
 
-// 引数の where に応じて件数を返すよう各 count モックを設定する。
-function mockCounts(c: {
+// firstAnswers はクイズごとの初回回答の正誤（DB の distinct 済み結果を模す）。
+function mockData(c: {
   unread: number;
   done: number;
   unanswered: number;
-  answers: number;
-  correct: number;
+  firstAnswers: boolean[];
 }) {
   articleCountMock.mockImplementation(({ where }) =>
     Promise.resolve(where.status === "unread" ? c.unread : c.done)
   );
   quizCountMock.mockResolvedValue(c.unanswered);
-  answerCountMock.mockImplementation(({ where }) =>
-    Promise.resolve(where.isCorrect ? c.correct : c.answers)
-  );
+  answerFindManyMock.mockResolvedValue(c.firstAnswers.map((isCorrect) => ({ isCorrect })));
 }
 
 describe("getDashboardStats", () => {
@@ -40,8 +38,8 @@ describe("getDashboardStats", () => {
     vi.resetAllMocks();
   });
 
-  it("aggregates article counts and quiz answer stats", async () => {
-    mockCounts({ unread: 3, done: 5, unanswered: 4, answers: 6, correct: 4 });
+  it("aggregates article counts and first-answer accuracy", async () => {
+    mockData({ unread: 3, done: 5, unanswered: 4, firstAnswers: [true, true, false] });
 
     const stats = await getDashboardStats("user-1");
 
@@ -49,32 +47,44 @@ describe("getDashboardStats", () => {
       unreadCount: 3,
       doneCount: 5,
       unansweredQuizCount: 4,
-      answerCount: 6,
+      answeredQuizCount: 3,
       accuracy: 67,
     });
   });
 
   it("returns null accuracy when the user has not answered any quiz", async () => {
-    mockCounts({ unread: 0, done: 0, unanswered: 0, answers: 0, correct: 0 });
+    mockData({ unread: 0, done: 0, unanswered: 0, firstAnswers: [] });
 
     const stats = await getDashboardStats("user-1");
 
     expect(stats.accuracy).toBeNull();
-    expect(stats.answerCount).toBe(0);
+    expect(stats.answeredQuizCount).toBe(0);
   });
 
-  it("scopes every query to the given user", async () => {
-    mockCounts({ unread: 0, done: 0, unanswered: 0, answers: 0, correct: 0 });
+  it("counts only the first answer per quiz so review-mode retries don't inflate accuracy", async () => {
+    mockData({ unread: 0, done: 0, unanswered: 0, firstAnswers: [] });
 
     await getDashboardStats("user-1");
 
-    expect(quizCountMock).toHaveBeenCalledWith({
-      where: { article: { userId: "user-1" }, quizAnswers: { none: { userId: "user-1" } } },
+    expect(answerFindManyMock).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+      distinct: ["quizId"],
+      orderBy: { answeredAt: "asc" },
+      select: { isCorrect: true },
     });
-    expect(answerCountMock).toHaveBeenCalledWith({ where: { userId: "user-1" } });
-    expect(answerCountMock).toHaveBeenCalledWith({
-      where: { userId: "user-1", isCorrect: true },
-    });
+  });
+
+  it("counts unanswered quizzes within the same lookback window as the quiz page", async () => {
+    mockData({ unread: 0, done: 0, unanswered: 0, firstAnswers: [] });
+
+    await getDashboardStats("user-1");
+
+    const { where } = quizCountMock.mock.calls[0][0];
+    expect(where.article).toEqual({ userId: "user-1" });
+    expect(where.quizAnswers).toEqual({ none: { userId: "user-1" } });
+    const expectedSince = new Date();
+    expectedSince.setDate(expectedSince.getDate() - QUIZ_LOOKBACK_DAYS);
+    expect(Math.abs(where.createdAt.gte.getTime() - expectedSince.getTime())).toBeLessThan(5000);
     for (const [arg] of articleCountMock.mock.calls) {
       expect(arg.where.userId).toBe("user-1");
     }
@@ -97,7 +107,7 @@ describe("GET /api/dashboard", () => {
 
   it("returns the current user's dashboard stats", async () => {
     authMock.mockResolvedValue({ user: { id: "user-1" } });
-    mockCounts({ unread: 1, done: 2, unanswered: 3, answers: 4, correct: 1 });
+    mockData({ unread: 1, done: 2, unanswered: 3, firstAnswers: [true, false, false, false] });
 
     const res = await GET(new Request("http://localhost/api/dashboard") as never, undefined);
 
@@ -106,7 +116,7 @@ describe("GET /api/dashboard", () => {
       unreadCount: 1,
       doneCount: 2,
       unansweredQuizCount: 3,
-      answerCount: 4,
+      answeredQuizCount: 4,
       accuracy: 25,
     });
   });
