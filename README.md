@@ -254,7 +254,7 @@ CI ではマイグレーション適用後に schema.prisma との差分を検�
 | choices | json | 四択の選択肢配列 |
 | answer | int | 正解のインデックス（0〜3） |
 | explanation | text | |
-| type | enum | daily / weekly |
+| type | enum | daily / weekly（weekly は未使用・将来用） |
 | created_at | timestamp | |
 
 ### quiz_answers
