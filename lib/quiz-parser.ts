@@ -42,6 +42,7 @@ export function isValidQuiz(q: unknown): q is QuizItem {
 // 「```json ... ```」やコメント文が前後に付くことがあるため、最初の '[' から
 // 最後の ']' までを正規表現で切り出してから JSON.parse する。
 // パースできても不正な項目（型ガード不通過）は filter で捨て、残りだけ返す。
+// 有効な項目が1つも残らなければエラーにする。
 // 検証は trim した値で行うため、保存される値も trim して検証と一致させる。
 export function parseQuizzes(text: string): QuizItem[] {
   const match = text.match(/\[[\s\S]*\]/);
@@ -52,7 +53,10 @@ export function parseQuizzes(text: string): QuizItem[] {
   } catch {
     throw new Error("No JSON array found in response");
   }
-  return parsed.filter(isValidQuiz).map((q) => ({
+  const quizzes = parsed.filter(isValidQuiz);
+  // 全問が検証落ちした場合は、0件を保存して成功扱いにしないようエラーにする。
+  if (quizzes.length === 0) throw new Error("No valid quizzes in response");
+  return quizzes.map((q) => ({
     question: q.question.trim(),
     choices: q.choices.map((c) => c.trim()),
     answer: q.answer,

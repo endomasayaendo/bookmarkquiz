@@ -62,6 +62,12 @@ describe("parseQuizzes", () => {
     expect(parseQuizzes(JSON.stringify([padded]))).toEqual([validQuiz]);
   });
 
+  it("throws when every quiz item is invalid", () => {
+    const text = JSON.stringify([{ ...validQuiz, choices: ["A", "B", "C"] }]);
+
+    expect(() => parseQuizzes(text)).toThrow("No valid quizzes in response");
+  });
+
   it("throws when no JSON array exists", () => {
     expect(() => parseQuizzes("No structured data here")).toThrow("No JSON array found");
   });
