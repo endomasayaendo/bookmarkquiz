@@ -1,9 +1,10 @@
 name: CI
 
 on:
-  # main 以外のブランチ（dev/feature）への push でも検証を回す
+  # push は main のみ（Deploy はこの run の成功を起点にする）。
+  # feature ブランチは pull_request 側で検証し、push と二重に走らないようにする
   push:
-    branches: ['**']
+    branches: [main]
   pull_request:
     branches: [main]
 
