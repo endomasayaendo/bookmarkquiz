@@ -24,7 +24,7 @@ describe("POST /api/onboarding/complete", () => {
   it("rejects unauthenticated users", async () => {
     authMock.mockResolvedValue(null);
 
-    const res = await POST();
+    const res = await POST(new Request("https://example.com/api/onboarding/complete", { method: "POST" }) as never, undefined);
 
     expect(res.status).toBe(401);
     expect(await res.json()).toEqual({ error: "Unauthorized" });
@@ -35,7 +35,7 @@ describe("POST /api/onboarding/complete", () => {
     authMock.mockResolvedValue({ user: { id: "user-1" } });
     updateMock.mockResolvedValue({});
 
-    const res = await POST();
+    const res = await POST(new Request("https://example.com/api/onboarding/complete", { method: "POST" }) as never, undefined);
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
