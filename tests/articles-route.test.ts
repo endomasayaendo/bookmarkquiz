@@ -89,4 +89,38 @@ describe("/api/articles", () => {
       orderBy: { createdAt: "desc" },
     });
   });
+
+  it("rejects an unknown status filter with 400", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+    const req = new Request("https://example.com/api/articles?status=bogus") as never;
+
+    const res = await GET(req);
+
+    expect(res.status).toBe(400);
+    expect(findManyMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a malformed JSON body with 400 and CORS headers", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+    const req = new Request("https://example.com/api/articles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{not json",
+    }) as never;
+
+    const res = await POST(req);
+
+    expect(res.status).toBe(400);
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    expect(upsertMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects non-string url/title with 400", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+
+    const res = await POST(postRequest({ url: ["https://zenn.dev/u/articles/a"], title: 1 }));
+
+    expect(res.status).toBe(400);
+    expect(upsertMock).not.toHaveBeenCalled();
+  });
 });
