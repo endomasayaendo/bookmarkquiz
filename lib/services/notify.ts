@@ -74,10 +74,10 @@ export async function notifyUsersWithNewQuizzes(
       const { error } = await mailer.emails.send({
         from: process.env.RESEND_FROM!,
         to: user.email!,
-        subject: "【BookmarkQuiz】今日のクイズができました",
+        subject: "【BookmarkQuiz】新しいクイズができました",
         html: `
           <h2 style="color:#111">BookmarkQuiz</h2>
-          <p>今日読んだ記事からクイズが生成されました。さっそく挑戦してみましょう。</p>
+          <p>読んだ記事から新しいクイズができました。さっそく挑戦してみましょう。</p>
           <p>
             <a href="${appUrl}/quiz" style="display:inline-block;padding:10px 20px;background:#111;color:#fff;text-decoration:none;border-radius:6px">
               クイズに挑戦する →

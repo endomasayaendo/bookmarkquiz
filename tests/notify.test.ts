@@ -49,7 +49,7 @@ describe("notifyUsersWithNewQuizzes", () => {
     expect(sendSpy.mock.calls[0][0]).toMatchObject({
       from: "noreply@example.com",
       to: "a@example.com",
-      subject: "【BookmarkQuiz】今日のクイズができました",
+      subject: "【BookmarkQuiz】新しいクイズができました",
     });
     expect(sendSpy.mock.calls[0][0].html).toContain("https://app.example/quiz");
   });
