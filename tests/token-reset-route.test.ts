@@ -25,7 +25,7 @@ describe("POST /api/token/reset", () => {
   it("rejects unauthenticated users", async () => {
     authMock.mockResolvedValue(null);
 
-    const res = await POST();
+    const res = await POST(new Request("https://example.com/api/token/reset", { method: "POST" }) as never, undefined);
 
     expect(res.status).toBe(401);
     expect(await res.json()).toEqual({ error: "Unauthorized" });
@@ -37,7 +37,7 @@ describe("POST /api/token/reset", () => {
     updateMock.mockResolvedValue({});
     vi.spyOn(crypto, "randomUUID").mockReturnValue("new-token" as `${string}-${string}-${string}-${string}-${string}`);
 
-    const res = await POST();
+    const res = await POST(new Request("https://example.com/api/token/reset", { method: "POST" }) as never, undefined);
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
