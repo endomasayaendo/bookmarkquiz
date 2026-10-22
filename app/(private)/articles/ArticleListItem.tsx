@@ -45,7 +45,7 @@ export default function ArticleListItem({ article, onToggle, onDelete }: Props) 
           {article.status === "done" && article.bodyMissing && (
             <span
               className="rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700"
-              title="未読に戻してから再度「読んだ」にすると本文を取得し直します"
+              title="本文を取得できなかったため、この記事のクイズは生成されていません"
             >
               本文未取得・クイズ対象外
             </span>

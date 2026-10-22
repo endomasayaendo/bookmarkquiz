@@ -26,7 +26,8 @@ export const DELETE = withSession<ArticleParams>(async (userId, req, { params })
 });
 
 // 既読/未読を切り替える。未読→既読化のときに本文未取得なら取得して保存し、
-// クイズ生成の元データを揃える。本文取得に失敗したらステータスも変えず 502。
+// クイズ生成の元データを揃える。本文取得に失敗しても既読化は行う
+// （ブックマークレットの /api/articles/read と同じ扱い。クイズ生成の対象外になるだけ）。
 export const PATCH = withSession<ArticleParams>(async (userId, req, { params }) => {
   const { id } = await params;
   const article = await getAuthorizedArticle(id, userId);
@@ -39,9 +40,9 @@ export const PATCH = withSession<ArticleParams>(async (userId, req, { params }) 
   let bodyText: string | undefined;
   if (newStatus === "done" && !article.bodyText) {
     try {
-      bodyText = await fetchBodyText(article.url);
-    } catch {
-      return NextResponse.json({ error: "記事本文の取得に失敗しました。時間をおいて再試行してください。" }, { status: 502 });
+      bodyText = (await fetchBodyText(article.url)) || undefined;
+    } catch (e) {
+      console.warn("[articles/[id]] fetchBodyText failed", article.url, e);
     }
   }
   const updated = await prisma.article.update({
