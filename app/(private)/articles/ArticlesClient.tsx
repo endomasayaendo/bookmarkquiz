@@ -22,7 +22,7 @@ export default function ArticlesClient({ articles }: Props) {
     run(() => router.refresh());
   }
 
-  // 既読/未読を切り替える。本文取得失敗(502)などはサーバーのメッセージを表示。
+  // 既読/未読を切り替える。失敗時はサーバーのメッセージを表示。
   async function handleToggle(id: string) {
     const { ok, error } = await callApi(`/api/articles/${id}`, { method: "PATCH" });
     if (!ok) {

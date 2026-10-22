@@ -8,6 +8,8 @@ export type Article = {
   status: string;
   createdAt: Date;
   ogpImage: string | null;
+  // 既読なのに本文を取得できておらず、クイズ生成の対象外になっている。
+  bodyMissing?: boolean;
 };
 
 // 表示用にホスト名だけ取り出す。不正 URL でも落とさず空文字を返す。

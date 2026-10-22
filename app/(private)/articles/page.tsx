@@ -24,6 +24,21 @@ export default async function ArticlesPage({
     select: { id: true, title: true, url: true, status: true, createdAt: true, readAt: true, ogpImage: true },
   });
 
+  // 本文未取得の既読記事はクイズが作られないので一覧で知らせる。
+  // 本文自体は重いので select せず、該当 ID だけ別クエリで引く。
+  const bodyMissingIds = new Set(
+    (
+      await prisma.article.findMany({
+        where: {
+          userId: session!.user!.id,
+          status: "done",
+          OR: [{ bodyText: null }, { bodyText: "" }],
+        },
+        select: { id: true },
+      })
+    ).map((a) => a.id)
+  );
+
   const heading = filter === "unread" ? "未読" : filter === "done" ? "読んだ" : "すべての記事";
   const headingColor =
     filter === "unread" ? "text-blue-600" : filter === "done" ? "text-green-600" : "text-gray-900";
@@ -63,7 +78,9 @@ export default async function ArticlesPage({
           </h1>
         </div>
 
-        <ArticlesClient articles={articles} />
+        <ArticlesClient
+          articles={articles.map((a) => ({ ...a, bodyMissing: bodyMissingIds.has(a.id) }))}
+        />
       </div>
     </div>
   );

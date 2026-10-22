@@ -28,16 +28,22 @@ export function withSession<Ctx = unknown>(
 }
 
 // Web セッションとブックマークレットトークンの両方を受け付けるルート用ラッパー。
-// ブックマークレットはクロスオリジン実行のため、未認証 401 にも CORS ヘッダを付ける。
+// ブックマークレットはクロスオリジン実行のため、未認証 401 や想定外の 500 にも
+// CORS ヘッダを付ける（付けないとブラウザがレスポンスを隠し、エラーを表示できない）。
 export function withUserOrBookmarklet(
   handler: (userId: string, req: NextRequest) => Promise<Response>
 ): (req: NextRequest) => Promise<Response> {
   return async (req: NextRequest) => {
-    const session = await auth();
-    const userId = session?.user?.id ?? (await getBookmarkletUserId(req));
-    if (!userId) {
-      return jsonError("Unauthorized", 401, CORS_HEADERS);
+    try {
+      const session = await auth();
+      const userId = session?.user?.id ?? (await getBookmarkletUserId(req));
+      if (!userId) {
+        return jsonError("Unauthorized", 401, CORS_HEADERS);
+      }
+      return await handler(userId, req);
+    } catch (e) {
+      console.error(e);
+      return jsonError("Internal Server Error", 500, CORS_HEADERS);
     }
-    return handler(userId, req);
   };
 }

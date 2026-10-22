@@ -32,6 +32,7 @@ describe("/api/articles/[id]", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it("deletes an article owned by the current user", async () => {
@@ -84,7 +85,7 @@ describe("/api/articles/[id]", () => {
     });
   });
 
-  it("does not mark an article as done when body fetch fails", async () => {
+  it("still marks an article as done when body fetch fails", async () => {
     authMock.mockResolvedValue({ user: { id: "user-1" } });
     findFirstMock.mockResolvedValue({
       id: "article-1",
@@ -93,11 +94,17 @@ describe("/api/articles/[id]", () => {
       bodyText: null,
     });
     vi.stubGlobal("fetch", vi.fn(async () => new Response("missing", { status: 404 })));
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    updateMock.mockResolvedValue({ id: "article-1", status: "done" });
 
     const res = await PATCH(req, params);
 
-    expect(res.status).toBe(502);
-    expect(updateMock).not.toHaveBeenCalled();
+    expect(res.status).toBe(200);
+    // bodyText は書き込まない（null のまま）
+    expect(updateMock).toHaveBeenCalledWith({
+      where: { id: "article-1" },
+      data: { status: "done", readAt: expect.any(Date) },
+    });
   });
 
   it("marks a done article as unread and clears readAt", async () => {
