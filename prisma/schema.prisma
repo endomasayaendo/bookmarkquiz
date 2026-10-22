@@ -80,6 +80,8 @@ model Article {
   summary   String?
   status    ArticleStatus @default(unread)
   readAt    DateTime?     @map("read_at")
+  // クイズ生成に失敗した回数。上限に達した記事は生成対象から外す。
+  quizGenerationAttempts Int @default(0) @map("quiz_generation_attempts")
   createdAt DateTime      @default(now()) @map("created_at")
 
   user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
