@@ -22,6 +22,13 @@ export type EmailSender = {
 export async function notifyUsersWithNewQuizzes(
   opts: { mailer?: EmailSender } = {}
 ): Promise<NotifyResult> {
+  // Resend 未設定の環境（ローカル・メール通知を使わないデプロイ）では送信をスキップする。
+  // cron が毎日失敗し続けないよう、エラーではなく 0 件として返す。
+  if (!opts.mailer && (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM)) {
+    console.warn("[notify] RESEND_API_KEY / RESEND_FROM が未設定のため送信をスキップします");
+    return { sent: 0, errors: 0 };
+  }
+
   // mailer 未指定時のみ実クライアントを生成（テスト時は env 不要にするため遅延生成）。
   const mailer = opts.mailer ?? new Resend(process.env.RESEND_API_KEY);
 

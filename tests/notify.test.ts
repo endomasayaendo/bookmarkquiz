@@ -65,4 +65,13 @@ describe("notifyUsersWithNewQuizzes", () => {
     expect(result).toEqual({ sent: 0, errors: 0 });
     expect(sendSpy).not.toHaveBeenCalled();
   });
+
+  it("skips sending without querying when Resend is not configured", async () => {
+    vi.stubEnv("RESEND_API_KEY", "");
+
+    const result = await notifyUsersWithNewQuizzes();
+
+    expect(result).toEqual({ sent: 0, errors: 0 });
+    expect(findManyMock).not.toHaveBeenCalled();
+  });
 });
