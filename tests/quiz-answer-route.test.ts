@@ -67,7 +67,11 @@ describe("POST /api/quizzes/[id]/answer", () => {
 
   it("creates an answer history entry and returns the result", async () => {
     authMock.mockResolvedValue({ user: { id: "user-1" } });
-    findFirstMock.mockResolvedValue({ answer: 2, explanation: "Because C is correct." });
+    findFirstMock.mockResolvedValue({
+      answer: 2,
+      choices: ["A", "B", "C", "D"],
+      explanation: "Because C is correct.",
+    });
     createAnswerMock.mockResolvedValue({});
 
     const res = await POST(request({ selectedIndex: 2 }), params);
@@ -81,5 +85,38 @@ describe("POST /api/quizzes/[id]/answer", () => {
     expect(createAnswerMock).toHaveBeenCalledWith({
       data: { userId: "user-1", quizId: "quiz-1", isCorrect: true },
     });
+  });
+
+  it.each([-1, 1.5])("rejects non-integer or negative selectedIndex (%s)", async (selectedIndex) => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+
+    const res = await POST(request({ selectedIndex }), params);
+
+    expect(res.status).toBe(400);
+    expect(findFirstMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a malformed JSON body with 400", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+    const req = new Request("https://example.com/api/quizzes/quiz-1/answer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{not json",
+    }) as never;
+
+    const res = await POST(req, params);
+
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects selectedIndex beyond the number of choices without recording", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+    findFirstMock.mockResolvedValue({ answer: 0, choices: ["A", "B", "C", "D"], explanation: "" });
+
+    const res = await POST(request({ selectedIndex: 4 }), params);
+
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "selectedIndex is out of range" });
+    expect(createAnswerMock).not.toHaveBeenCalled();
   });
 });

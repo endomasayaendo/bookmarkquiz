@@ -80,7 +80,7 @@ describe("/api/articles", () => {
     findManyMock.mockResolvedValue([{ id: "article-1" }]);
     const req = new Request("https://example.com/api/articles?status=done") as never;
 
-    const res = await GET(req);
+    const res = await GET(req, undefined);
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual([{ id: "article-1" }]);
@@ -88,5 +88,69 @@ describe("/api/articles", () => {
       where: { userId: "user-1", status: "done" },
       orderBy: { createdAt: "desc" },
     });
+  });
+
+  it("rejects an unknown status filter with 400", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+    const req = new Request("https://example.com/api/articles?status=bogus") as never;
+
+    const res = await GET(req, undefined);
+
+    expect(res.status).toBe(400);
+    expect(findManyMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a malformed JSON body with 400 and CORS headers", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+    const req = new Request("https://example.com/api/articles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{not json",
+    }) as never;
+
+    const res = await POST(req);
+
+    expect(res.status).toBe(400);
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    expect(upsertMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects non-string url/title with 400", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+
+    const res = await POST(postRequest({ url: ["https://zenn.dev/u/articles/a"], title: 1 }));
+
+    expect(res.status).toBe(400);
+    expect(upsertMock).not.toHaveBeenCalled();
+  });
+
+  it("treats an empty status filter as no filter", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+    findManyMock.mockResolvedValue([]);
+    const req = new Request("https://example.com/api/articles?status=") as never;
+
+    const res = await GET(req, undefined);
+
+    expect(res.status).toBe(200);
+    expect(findManyMock.mock.calls[0][0].where).toEqual({ userId: "user-1" });
+  });
+
+  it("rejects a whitespace-only title with 400", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+
+    const res = await POST(postRequest({ url: "https://zenn.dev/user/articles/abc", title: "   " }));
+
+    expect(res.status).toBe(400);
+    expect(upsertMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the stored ogpImage when re-registering without one", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+    upsertMock.mockResolvedValue({ id: "article-1" });
+
+    await POST(postRequest({ url: "https://zenn.dev/user/articles/abc", title: "Article" }));
+
+    expect(upsertMock.mock.calls[0][0].update).toEqual({ title: "Article" });
+    expect(upsertMock.mock.calls[0][0].create.ogpImage).toBeNull();
   });
 });
