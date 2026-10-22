@@ -34,12 +34,12 @@ export function withUserOrBookmarklet(
   handler: (userId: string, req: NextRequest) => Promise<Response>
 ): (req: NextRequest) => Promise<Response> {
   return async (req: NextRequest) => {
-    const session = await auth();
-    const userId = session?.user?.id ?? (await getBookmarkletUserId(req));
-    if (!userId) {
-      return jsonError("Unauthorized", 401, CORS_HEADERS);
-    }
     try {
+      const session = await auth();
+      const userId = session?.user?.id ?? (await getBookmarkletUserId(req));
+      if (!userId) {
+        return jsonError("Unauthorized", 401, CORS_HEADERS);
+      }
       return await handler(userId, req);
     } catch (e) {
       console.error(e);

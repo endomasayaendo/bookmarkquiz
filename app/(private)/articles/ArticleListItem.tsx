@@ -40,7 +40,17 @@ export default function ArticleListItem({ article, onToggle, onDelete }: Props) 
       </a>
 
       <div className="flex items-center justify-between">
-        <span className="text-xs text-gray-400">{hostname}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400">{hostname}</span>
+          {article.status === "done" && article.bodyMissing && (
+            <span
+              className="rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700"
+              title="未読に戻してから再度「読んだ」にすると本文を取得し直します"
+            >
+              本文未取得・クイズ対象外
+            </span>
+          )}
+        </div>
 
         <div className="flex items-center gap-2">
           <button

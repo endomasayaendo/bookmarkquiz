@@ -116,4 +116,18 @@ describe("withUserOrBookmarklet", () => {
     expect(await res.json()).toEqual({ error: "Internal Server Error" });
     expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
   });
+
+  it("returns 500 with CORS headers when the token lookup throws", async () => {
+    authMock.mockResolvedValue(null);
+    bookmarkletMock.mockRejectedValue(new Error("db down"));
+    const handler = vi.fn();
+    const route = withUserOrBookmarklet(handler);
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await route(req({ Authorization: "Bearer abc" }));
+
+    expect(res.status).toBe(500);
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    expect(handler).not.toHaveBeenCalled();
+  });
 });

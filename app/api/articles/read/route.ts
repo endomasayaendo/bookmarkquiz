@@ -16,7 +16,8 @@ export function OPTIONS() {
 // 後続の Cron（generate-quizzes）がこの bodyText からクイズを生成する。
 // 未登録なら create、既存なら done へ更新する upsert。
 // 本文取得に失敗しても既読登録自体は成功させる（クイズ生成の対象外になるだけ）。
-// その場合は既存の bodyText を null で上書きせず、成否を hasBodyText で返す。
+// その場合は既存の bodyText を上書きせず、成否を hasBodyText で返す。
+// 抽出結果が空文字（JS レンダリングのページ等）の場合も取得失敗として扱う。
 export const POST = withUserOrBookmarklet(async (userId, req) => {
   const { url, title, ogpImage } = await req.json();
   if (!url || !title) {
@@ -35,9 +36,10 @@ export const POST = withUserOrBookmarklet(async (userId, req) => {
 
   let bodyText: string | null = null;
   try {
-    bodyText = await fetchBodyText(url);
-  } catch {
-    // 取得失敗時は null のまま既読登録を続ける。
+    bodyText = (await fetchBodyText(url)) || null;
+  } catch (e) {
+    // 取得失敗時は null のまま既読登録を続ける。原因調査用にログだけ残す。
+    console.warn("[articles/read] fetchBodyText failed", url, e);
   }
 
   const article = await prisma.article.upsert({
@@ -54,8 +56,9 @@ export const POST = withUserOrBookmarklet(async (userId, req) => {
     },
   });
 
+  // 本文をブックマークレット（外部ページ）へ返さないよう、必要な項目だけ返す。
   return NextResponse.json(
-    { ...article, hasBodyText: article.bodyText != null },
+    { id: article.id, status: article.status, hasBodyText: !!article.bodyText },
     { headers: CORS_HEADERS }
   );
 });
