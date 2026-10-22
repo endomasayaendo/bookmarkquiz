@@ -15,6 +15,8 @@ export function OPTIONS() {
 // 記事を既読(done)で登録／更新する。登録時に本文テキストを取得して保存し、
 // 後続の Cron（generate-quizzes）がこの bodyText からクイズを生成する。
 // 未登録なら create、既存なら done へ更新する upsert。
+// 本文取得に失敗しても既読登録自体は成功させる（クイズ生成の対象外になるだけ）。
+// その場合は既存の bodyText を null で上書きせず、成否を hasBodyText で返す。
 export const POST = withUserOrBookmarklet(async (userId, req) => {
   const { url, title, ogpImage } = await req.json();
   if (!url || !title) {
@@ -31,11 +33,16 @@ export const POST = withUserOrBookmarklet(async (userId, req) => {
     );
   }
 
-  const bodyText = await fetchBodyText(url);
+  let bodyText: string | null = null;
+  try {
+    bodyText = await fetchBodyText(url);
+  } catch {
+    // 取得失敗時は null のまま既読登録を続ける。
+  }
 
   const article = await prisma.article.upsert({
     where: { userId_url: { userId, url } },
-    update: { status: "done", readAt: new Date(), bodyText },
+    update: { status: "done", readAt: new Date(), ...(bodyText !== null && { bodyText }) },
     create: {
       userId,
       url,
@@ -47,5 +54,8 @@ export const POST = withUserOrBookmarklet(async (userId, req) => {
     },
   });
 
-  return NextResponse.json(article, { headers: CORS_HEADERS });
+  return NextResponse.json(
+    { ...article, hasBodyText: article.bodyText != null },
+    { headers: CORS_HEADERS }
+  );
 });

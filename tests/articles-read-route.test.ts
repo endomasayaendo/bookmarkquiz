@@ -36,7 +36,7 @@ describe("POST /api/articles/read", () => {
 
   it("fetches article body text and upserts a done article", async () => {
     authMock.mockResolvedValue({ user: { id: "user-1" } });
-    upsertMock.mockResolvedValue({ id: "article-1" });
+    upsertMock.mockResolvedValue({ id: "article-1", bodyText: "Read article body" });
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response("<body><main>Read article body</main></body>", {
@@ -51,7 +51,11 @@ describe("POST /api/articles/read", () => {
     }));
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ id: "article-1" });
+    expect(await res.json()).toEqual({
+      id: "article-1",
+      bodyText: "Read article body",
+      hasBodyText: true,
+    });
     expect(upsertMock).toHaveBeenCalledWith({
       where: { userId_url: { userId: "user-1", url: "https://qiita.com/user/items/abc" } },
       update: { status: "done", readAt: expect.any(Date), bodyText: "Read article body" },
@@ -65,6 +69,41 @@ describe("POST /api/articles/read", () => {
         readAt: expect.any(Date),
       },
     });
+  });
+
+  it("still marks the article as done when fetching the body fails", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+    upsertMock.mockResolvedValue({ id: "article-1", bodyText: null });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 301 })));
+
+    const res = await POST(request({
+      url: "https://qiita.com/user/items/abc",
+      title: "Article",
+    }));
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    expect(await res.json()).toEqual({ id: "article-1", bodyText: null, hasBodyText: false });
+    expect(upsertMock).toHaveBeenCalledWith({
+      where: { userId_url: { userId: "user-1", url: "https://qiita.com/user/items/abc" } },
+      // 既存の bodyText を null で上書きしない
+      update: { status: "done", readAt: expect.any(Date) },
+      create: expect.objectContaining({ bodyText: null, status: "done" }),
+    });
+  });
+
+  it("reports hasBodyText from the stored article when a refetch fails", async () => {
+    authMock.mockResolvedValue({ user: { id: "user-1" } });
+    upsertMock.mockResolvedValue({ id: "article-1", bodyText: "Previously fetched" });
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("network down"); }));
+
+    const res = await POST(request({
+      url: "https://qiita.com/user/items/abc",
+      title: "Article",
+    }));
+
+    expect(res.status).toBe(200);
+    expect((await res.json()).hasBodyText).toBe(true);
   });
 
   it("rejects unsupported article domains before fetching", async () => {
