@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: 22
 
-      - run: npm install --global vercel@latest
+      - run: npm install --global vercel@62.7.0
 
       # Vercel の環境設定を取得 → 本番ビルド → ビルド済み成果物をデプロイ
       - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}

@@ -18,7 +18,22 @@ describe("isValidQuiz", () => {
   });
 
   it("rejects a quiz with non-string choices", () => {
-    expect(isValidQuiz({ ...validQuiz, choices: ["A", 2] })).toBe(false);
+    expect(isValidQuiz({ ...validQuiz, choices: ["A", "B", "C", 2] })).toBe(false);
+  });
+
+  it("rejects a quiz that does not have exactly four choices", () => {
+    expect(isValidQuiz({ ...validQuiz, choices: ["A", "B"] })).toBe(false);
+    expect(isValidQuiz({ ...validQuiz, choices: ["A", "B", "C", "D", "E"] })).toBe(false);
+  });
+
+  it("rejects a quiz with blank or duplicate choices", () => {
+    expect(isValidQuiz({ ...validQuiz, choices: ["A", " ", "C", "D"] })).toBe(false);
+    expect(isValidQuiz({ ...validQuiz, choices: ["A", "B", "A ", "D"] })).toBe(false);
+  });
+
+  it("rejects a quiz with a blank question or explanation", () => {
+    expect(isValidQuiz({ ...validQuiz, question: "  " })).toBe(false);
+    expect(isValidQuiz({ ...validQuiz, explanation: "" })).toBe(false);
   });
 });
 
