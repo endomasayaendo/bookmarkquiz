@@ -9,10 +9,10 @@ const ARTICLE_ID = "00000000-0000-0000-0000-0000000000a1";
 const QUIZ_ID = "00000000-0000-0000-0000-0000000000b1";
 
 // E2E実行前に一度だけ走る。
-// 1) テストDBにschemaを投入（既に同期済みなら no-op）
+// 1) テストDBに未適用のマイグレーションを適用（適用済みなら no-op）
 // 2) demoユーザーと関連データを作り直し、毎回同じ初期状態から始める
 export default async function globalSetup() {
-  execSync("npx prisma db push", {
+  execSync("npx prisma migrate deploy", {
     stdio: "inherit",
     env: process.env,
   });
