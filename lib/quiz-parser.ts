@@ -10,22 +10,31 @@ export type QuizItem = {
   explanation: string;
 };
 
+// プロンプト・UI ともに4択前提なので、選択肢はちょうどこの数に限る。
+export const CHOICE_COUNT = 4;
+
+// 空文字・空白のみを弾くための判定。
+function isNonBlankString(v: unknown): v is string {
+  return typeof v === "string" && v.trim().length > 0;
+}
+
 // 1問が QuizItem として成立しているかを実行時に検証する型ガード。
-// answer は choices の範囲内インデックスであることまで確認する。
+// 選択肢はちょうど4つ・空でなく重複なし、answer はその範囲内のインデックス、
+// 問題文と解説は空でないことまで確認する。
 export function isValidQuiz(q: unknown): q is QuizItem {
   if (!q || typeof q !== "object") return false;
   const { question, choices, answer, explanation } = q as Record<string, unknown>;
   return (
-    typeof question === "string" &&
-    question.length > 0 &&
+    isNonBlankString(question) &&
     Array.isArray(choices) &&
-    choices.length >= 2 &&
-    choices.every((c) => typeof c === "string") &&
+    choices.length === CHOICE_COUNT &&
+    choices.every(isNonBlankString) &&
+    new Set(choices.map((c) => c.trim())).size === choices.length &&
     typeof answer === "number" &&
     Number.isInteger(answer) &&
     answer >= 0 &&
     answer < choices.length &&
-    typeof explanation === "string"
+    isNonBlankString(explanation)
   );
 }
 
@@ -33,6 +42,8 @@ export function isValidQuiz(q: unknown): q is QuizItem {
 // 「```json ... ```」やコメント文が前後に付くことがあるため、最初の '[' から
 // 最後の ']' までを正規表現で切り出してから JSON.parse する。
 // パースできても不正な項目（型ガード不通過）は filter で捨て、残りだけ返す。
+// 有効な項目が1つも残らなければエラーにする。
+// 検証は trim した値で行うため、保存される値も trim して検証と一致させる。
 export function parseQuizzes(text: string): QuizItem[] {
   const match = text.match(/\[[\s\S]*\]/);
   if (!match) throw new Error("No JSON array found in response");
@@ -42,5 +53,13 @@ export function parseQuizzes(text: string): QuizItem[] {
   } catch {
     throw new Error("No JSON array found in response");
   }
-  return parsed.filter(isValidQuiz);
+  const quizzes = parsed.filter(isValidQuiz);
+  // 全問が検証落ちした場合は、0件を保存して成功扱いにしないようエラーにする。
+  if (quizzes.length === 0) throw new Error("No valid quizzes in response");
+  return quizzes.map((q) => ({
+    question: q.question.trim(),
+    choices: q.choices.map((c) => c.trim()),
+    answer: q.answer,
+    explanation: q.explanation.trim(),
+  }));
 }

@@ -18,7 +18,22 @@ describe("isValidQuiz", () => {
   });
 
   it("rejects a quiz with non-string choices", () => {
-    expect(isValidQuiz({ ...validQuiz, choices: ["A", 2] })).toBe(false);
+    expect(isValidQuiz({ ...validQuiz, choices: ["A", "B", "C", 2] })).toBe(false);
+  });
+
+  it("rejects a quiz that does not have exactly four choices", () => {
+    expect(isValidQuiz({ ...validQuiz, choices: ["A", "B"] })).toBe(false);
+    expect(isValidQuiz({ ...validQuiz, choices: ["A", "B", "C", "D", "E"] })).toBe(false);
+  });
+
+  it("rejects a quiz with blank or duplicate choices", () => {
+    expect(isValidQuiz({ ...validQuiz, choices: ["A", " ", "C", "D"] })).toBe(false);
+    expect(isValidQuiz({ ...validQuiz, choices: ["A", "B", "A ", "D"] })).toBe(false);
+  });
+
+  it("rejects a quiz with a blank question or explanation", () => {
+    expect(isValidQuiz({ ...validQuiz, question: "  " })).toBe(false);
+    expect(isValidQuiz({ ...validQuiz, explanation: "" })).toBe(false);
   });
 });
 
@@ -34,6 +49,23 @@ describe("parseQuizzes", () => {
     const text = JSON.stringify([invalidQuiz, validQuiz]);
 
     expect(parseQuizzes(text)).toEqual([validQuiz]);
+  });
+
+  it("trims whitespace from accepted quiz text", () => {
+    const padded = {
+      ...validQuiz,
+      question: `  ${validQuiz.question} `,
+      choices: validQuiz.choices.map((c) => ` ${c}\n`),
+      explanation: `${validQuiz.explanation}  `,
+    };
+
+    expect(parseQuizzes(JSON.stringify([padded]))).toEqual([validQuiz]);
+  });
+
+  it("throws when every quiz item is invalid", () => {
+    const text = JSON.stringify([{ ...validQuiz, choices: ["A", "B", "C"] }]);
+
+    expect(() => parseQuizzes(text)).toThrow("No valid quizzes in response");
   });
 
   it("throws when no JSON array exists", () => {
