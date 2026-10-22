@@ -4,7 +4,7 @@ import { Client } from "pg";
 // ローカルで Groq なしにアプリ全体（クイズ回答まで）を体験するためのデモデータ投入。
 // 手書きの固定データを直接 INSERT するので、ブックマークレットも Groq も不要。
 //
-// 事前に `prisma db push` でスキーマを投入し、DATABASE_URL をローカルDBに向けて実行する:
+// 事前に `prisma migrate deploy` でスキーマを投入し、DATABASE_URL をローカルDBに向けて実行する:
 //   npm run db:seed
 
 const DEMO_EMAIL = "demo@example.com";
