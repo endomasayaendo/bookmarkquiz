@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "crypto";
+import { createHash, timingSafeEqual } from "crypto";
 
 // Vercel Cron からのリクエストを認証する共通処理。
 // Authorization ヘッダに `Bearer <secret>` で来ても生の secret で来ても受理し、
@@ -14,10 +14,9 @@ export function isAuthorizedCronRequest(req: Request): boolean {
 }
 
 // タイミング攻撃でシークレットを推測されないよう定数時間で比較する。
-// timingSafeEqual は長さ違いで例外を投げるため、先に長さで弾く。
+// 長さ違いで早期 return すると長さが漏れるため、SHA-256 で固定長にしてから比較する。
 function safeEqual(a: string, b: string): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  if (bufA.length !== bufB.length) return false;
-  return timingSafeEqual(bufA, bufB);
+  const hashA = createHash("sha256").update(a).digest();
+  const hashB = createHash("sha256").update(b).digest();
+  return timingSafeEqual(hashA, hashB);
 }
