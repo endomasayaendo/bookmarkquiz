@@ -7,13 +7,14 @@ import { prisma } from "@/lib/prisma";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    article: { findMany: vi.fn(), count: vi.fn() },
+    article: { findMany: vi.fn(), count: vi.fn(), update: vi.fn() },
     quiz: { createMany: vi.fn() },
   },
 }));
 
 const findManyMock = prisma.article.findMany as unknown as Mock;
 const countMock = prisma.article.count as unknown as Mock;
+const updateMock = prisma.article.update as unknown as Mock;
 const createManyMock = prisma.quiz.createMany as unknown as Mock;
 
 const VALID_JSON = JSON.stringify([
@@ -33,6 +34,8 @@ describe("generateQuizzesForPendingArticles", () => {
     countMock.mockReset();
     // 既定では残件なし（remaining は 0 に丸められる）。
     countMock.mockResolvedValue(0);
+    updateMock.mockReset();
+    updateMock.mockResolvedValue({});
     createManyMock.mockReset();
     vi.unstubAllEnvs();
     createManyMock.mockResolvedValue({});
@@ -118,12 +121,18 @@ describe("generateQuizzesForPendingArticles", () => {
 
     await generateQuizzesForPendingArticles({ llm });
 
-    const where = { status: "done", bodyText: { not: null }, quizzes: { none: {} } };
+    const where = {
+      status: "done",
+      bodyText: { not: null },
+      NOT: { bodyText: "" },
+      quizzes: { none: {} },
+      quizGenerationAttempts: { lt: 3 },
+    };
     expect(findManyMock).toHaveBeenCalledWith({
       where,
       select: { id: true, title: true, bodyText: true },
       orderBy: { readAt: "desc" },
-      take: 20,
+      take: 10,
     });
     expect(countMock).toHaveBeenCalledWith({ where });
   });
@@ -147,7 +156,7 @@ describe("generateQuizzesForPendingArticles", () => {
 
     await generateQuizzesForPendingArticles({ llm });
 
-    expect(findManyMock.mock.calls[0][0].take).toBe(20);
+    expect(findManyMock.mock.calls[0][0].take).toBe(10);
   });
 
   it("counts a response with no valid quizzes as an error without saving", async () => {
@@ -159,5 +168,53 @@ describe("generateQuizzesForPendingArticles", () => {
     expect(result.errors).toBe(1);
     expect(result.errorMessages).toEqual(["No valid quizzes in response"]);
     expect(createManyMock).not.toHaveBeenCalled();
+  });
+
+  it("increments the attempt count of an article whose generation failed", async () => {
+    findManyMock.mockResolvedValue([{ id: "a1", title: "T1", bodyText: "body" }]);
+    countMock.mockResolvedValue(1);
+    const { llm } = fakeLlm("no json here");
+
+    const result = await generateQuizzesForPendingArticles({ llm });
+
+    expect(updateMock).toHaveBeenCalledWith({
+      where: { id: "a1" },
+      data: { quizGenerationAttempts: { increment: 1 } },
+    });
+    expect(result.remaining).toBe(0);
+  });
+
+  it("stops on a rate limit error without counting it as an attempt", async () => {
+    findManyMock.mockResolvedValue([
+      { id: "a1", title: "T1", bodyText: "body" },
+      { id: "a2", title: "T2", bodyText: "body" },
+    ]);
+    countMock.mockResolvedValue(2);
+    const createSpy = vi.fn().mockRejectedValue(Object.assign(new Error("Rate limited"), { status: 429 }));
+    const llm: QuizLlm = { chat: { completions: { create: createSpy } } };
+
+    const result = await generateQuizzesForPendingArticles({ llm });
+
+    expect(createSpy).toHaveBeenCalledTimes(1);
+    expect(updateMock).not.toHaveBeenCalled();
+    expect(result.errors).toBe(1);
+    expect(result.remaining).toBe(2);
+  });
+
+  it("stops starting new articles once the time budget is used up", async () => {
+    findManyMock.mockResolvedValue([
+      { id: "a1", title: "T1", bodyText: "body" },
+      { id: "a2", title: "T2", bodyText: "body" },
+    ]);
+    countMock.mockResolvedValue(2);
+    // 開始時刻 0、1件目の前は 0 秒、2件目の前は 46 秒経過している。
+    const now = vi.fn().mockReturnValueOnce(0).mockReturnValueOnce(0).mockReturnValue(46_000);
+    const { llm, createSpy } = fakeLlm(VALID_JSON);
+
+    const result = await generateQuizzesForPendingArticles({ llm, now });
+
+    expect(createSpy).toHaveBeenCalledTimes(1);
+    expect(result.generated).toBe(2);
+    expect(result.remaining).toBe(1);
   });
 });
