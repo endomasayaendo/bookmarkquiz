@@ -2,17 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withSession } from "@/lib/api/auth";
 
-// ログインユーザーのクイズ一覧を返す。?type=daily|weekly で絞り込み可能。
+// ログインユーザーのクイズ一覧を返す。
 // 出題前の取得なので answer（正解）と explanation は select に含めない。
-export const GET = withSession(async (userId, req) => {
-  const { searchParams } = new URL(req.url);
-  const type = searchParams.get("type") as "daily" | "weekly" | null;
-
+export const GET = withSession(async (userId) => {
   const quizzes = await prisma.quiz.findMany({
-    where: {
-      article: { userId },
-      ...(type ? { type } : {}),
-    },
+    where: { article: { userId } },
     select: {
       id: true,
       articleId: true,

@@ -15,6 +15,7 @@ model User {
   email            String?   @unique
   emailVerified    DateTime? @map("email_verified")
   image            String?
+  // 未使用（将来の Web Push 通知用に予約）。本番 DB にカラムがあるため削除は別途判断。
   pushSubscription      Json?     @map("push_subscription")
   bookmarkletToken      String?   @unique @map("bookmarklet_token")
   onboardingCompleted   Boolean   @default(false) @map("onboarding_completed")
@@ -77,7 +78,7 @@ model Article {
   title     String
   ogpImage  String?       @map("ogp_image")
   bodyText  String?       @map("body_text")
-  summary   String?
+  summary   String?       // 未使用（どこからも書き込まれていない）。本番 DB にカラムがあるため削除は別途判断。
   status    ArticleStatus @default(unread)
   readAt    DateTime?     @map("read_at")
   createdAt DateTime      @default(now()) @map("created_at")
@@ -112,7 +113,7 @@ model Quiz {
 
 enum QuizType {
   daily
-  weekly
+  weekly // 未使用（現状は daily のみ生成。週次クイズ用に予約）
 }
 
 model QuizAnswer {

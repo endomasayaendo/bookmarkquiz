@@ -32,6 +32,12 @@ describe("isAuthorizedCronRequest", () => {
     expect(isAuthorizedCronRequest(req("nope"))).toBe(false);
   });
 
+  it("rejects a secret that shares a prefix but differs in length", () => {
+    vi.stubEnv("CRON_SECRET", "s3cret");
+    expect(isAuthorizedCronRequest(req("Bearer s3cret-extra"))).toBe(false);
+    expect(isAuthorizedCronRequest(req("Bearer s3c"))).toBe(false);
+  });
+
   it("rejects a missing Authorization header", () => {
     vi.stubEnv("CRON_SECRET", "s3cret");
     expect(isAuthorizedCronRequest(req())).toBe(false);
