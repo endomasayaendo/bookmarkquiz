@@ -1,18 +1,19 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import {
-  generateQuizzesForRecentArticles,
+  generateQuizzesForPendingArticles,
   type QuizLlm,
 } from "@/lib/services/quiz-generation";
 import { prisma } from "@/lib/prisma";
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    article: { findMany: vi.fn() },
+    article: { findMany: vi.fn(), count: vi.fn() },
     quiz: { createMany: vi.fn() },
   },
 }));
 
 const findManyMock = prisma.article.findMany as unknown as Mock;
+const countMock = prisma.article.count as unknown as Mock;
 const createManyMock = prisma.quiz.createMany as unknown as Mock;
 
 const VALID_JSON = JSON.stringify([
@@ -26,10 +27,14 @@ function fakeLlm(content: string): { llm: QuizLlm; createSpy: Mock } {
   return { llm: { chat: { completions: { create: createSpy } } }, createSpy };
 }
 
-describe("generateQuizzesForRecentArticles", () => {
+describe("generateQuizzesForPendingArticles", () => {
   beforeEach(() => {
     findManyMock.mockReset();
+    countMock.mockReset();
+    // 既定では残件なし（remaining は 0 に丸められる）。
+    countMock.mockResolvedValue(0);
     createManyMock.mockReset();
+    vi.unstubAllEnvs();
     createManyMock.mockResolvedValue({});
   });
 
@@ -37,9 +42,9 @@ describe("generateQuizzesForRecentArticles", () => {
     findManyMock.mockResolvedValue([{ id: "a1", title: "T1", bodyText: "body" }]);
     const { llm } = fakeLlm(VALID_JSON);
 
-    const result = await generateQuizzesForRecentArticles({ llm });
+    const result = await generateQuizzesForPendingArticles({ llm });
 
-    expect(result).toEqual({ generated: 2, skipped: 0, errors: 0, errorMessages: [] });
+    expect(result).toEqual({ generated: 2, skipped: 0, errors: 0, errorMessages: [], remaining: 0 });
     expect(createManyMock).toHaveBeenCalledWith({
       data: [
         { articleId: "a1", question: "Q1", choices: ["a", "b", "c", "d"], answer: 0, explanation: "E1", type: "daily" },
@@ -53,7 +58,7 @@ describe("generateQuizzesForRecentArticles", () => {
     findManyMock.mockResolvedValue([{ id: "a1", title: "T1", bodyText: longBody }]);
     const { llm, createSpy } = fakeLlm(VALID_JSON);
 
-    await generateQuizzesForRecentArticles({ llm });
+    await generateQuizzesForPendingArticles({ llm });
 
     const prompt: string = createSpy.mock.calls[0][0].messages[0].content;
     expect(prompt).toContain("x".repeat(8000));
@@ -72,7 +77,7 @@ describe("generateQuizzesForRecentArticles", () => {
       .mockResolvedValueOnce({ choices: [{ message: { content: VALID_JSON } }] });
     const llm: QuizLlm = { chat: { completions: { create: createSpy } } };
 
-    const result = await generateQuizzesForRecentArticles({ llm });
+    const result = await generateQuizzesForPendingArticles({ llm });
 
     expect(result.errors).toBe(1);
     expect(result.errorMessages).toHaveLength(1);
@@ -85,13 +90,14 @@ describe("generateQuizzesForRecentArticles", () => {
     const createSpy = vi.fn().mockRejectedValue(new Error("LLM down"));
     const llm: QuizLlm = { chat: { completions: { create: createSpy } } };
 
-    const result = await generateQuizzesForRecentArticles({ llm });
+    const result = await generateQuizzesForPendingArticles({ llm });
 
     expect(result).toEqual({
       generated: 0,
       skipped: 0,
       errors: 1,
       errorMessages: ["LLM down"],
+      remaining: 0,
     });
     expect(createManyMock).not.toHaveBeenCalled();
   });
@@ -100,9 +106,58 @@ describe("generateQuizzesForRecentArticles", () => {
     findManyMock.mockResolvedValue([]);
     const { llm, createSpy } = fakeLlm(VALID_JSON);
 
-    const result = await generateQuizzesForRecentArticles({ llm });
+    const result = await generateQuizzesForPendingArticles({ llm });
 
-    expect(result).toEqual({ generated: 0, skipped: 0, errors: 0, errorMessages: [] });
+    expect(result).toEqual({ generated: 0, skipped: 0, errors: 0, errorMessages: [], remaining: 0 });
     expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it("targets all done articles with body and no quizzes, without a time window", async () => {
+    findManyMock.mockResolvedValue([]);
+    const { llm } = fakeLlm(VALID_JSON);
+
+    await generateQuizzesForPendingArticles({ llm });
+
+    const where = { status: "done", bodyText: { not: null }, quizzes: { none: {} } };
+    expect(findManyMock).toHaveBeenCalledWith({
+      where,
+      select: { id: true, title: true, bodyText: true },
+      orderBy: { readAt: "desc" },
+      take: 20,
+    });
+    expect(countMock).toHaveBeenCalledWith({ where });
+  });
+
+  it("limits the batch size via env and reports the remaining count", async () => {
+    vi.stubEnv("QUIZ_GENERATION_BATCH_SIZE", "1");
+    findManyMock.mockResolvedValue([{ id: "a1", title: "T1", bodyText: "body" }]);
+    countMock.mockResolvedValue(5);
+    const { llm } = fakeLlm(VALID_JSON);
+
+    const result = await generateQuizzesForPendingArticles({ llm });
+
+    expect(findManyMock.mock.calls[0][0].take).toBe(1);
+    expect(result.remaining).toBe(4);
+  });
+
+  it("falls back to the default batch size for an invalid env value", async () => {
+    vi.stubEnv("QUIZ_GENERATION_BATCH_SIZE", "abc");
+    findManyMock.mockResolvedValue([]);
+    const { llm } = fakeLlm(VALID_JSON);
+
+    await generateQuizzesForPendingArticles({ llm });
+
+    expect(findManyMock.mock.calls[0][0].take).toBe(20);
+  });
+
+  it("counts a response with no valid quizzes as an error without saving", async () => {
+    findManyMock.mockResolvedValue([{ id: "a1", title: "T1", bodyText: "body" }]);
+    const { llm } = fakeLlm(JSON.stringify([{ question: "broken" }]));
+
+    const result = await generateQuizzesForPendingArticles({ llm });
+
+    expect(result.errors).toBe(1);
+    expect(result.errorMessages).toEqual(["No valid quizzes in response"]);
+    expect(createManyMock).not.toHaveBeenCalled();
   });
 });
