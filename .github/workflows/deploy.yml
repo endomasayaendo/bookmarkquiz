@@ -35,4 +35,13 @@ jobs:
 
       - run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
+      # ビルドが通ったら、新コードを出す前に本番 DB へマイグレーションを適用する。
+      # 失敗したらデプロイしない。Supabase の Transaction pooler では migrate が
+      # 動かないため、Direct connection（または Session pooler）の URL を使う。
+      - run: npm ci
+
+      - run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+
       - run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
