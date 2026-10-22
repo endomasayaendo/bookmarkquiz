@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import {
   generateQuizzesForPendingArticles,
   type QuizLlm,
@@ -39,6 +39,10 @@ describe("generateQuizzesForPendingArticles", () => {
     createManyMock.mockReset();
     vi.unstubAllEnvs();
     createManyMock.mockResolvedValue({});
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("generates quizzes and stores them with type 'daily'", async () => {
@@ -115,7 +119,7 @@ describe("generateQuizzesForPendingArticles", () => {
     expect(createSpy).not.toHaveBeenCalled();
   });
 
-  it("targets all done articles with body and no quizzes, without a time window", async () => {
+  it("targets all done articles without quizzes, without a time window", async () => {
     findManyMock.mockResolvedValue([]);
     const { llm } = fakeLlm(VALID_JSON);
 
@@ -123,15 +127,13 @@ describe("generateQuizzesForPendingArticles", () => {
 
     const where = {
       status: "done",
-      bodyText: { not: null },
-      NOT: { bodyText: "" },
       quizzes: { none: {} },
       quizGenerationAttempts: { lt: 3 },
     };
     expect(findManyMock).toHaveBeenCalledWith({
       where,
-      select: { id: true, title: true, bodyText: true },
-      orderBy: { readAt: "desc" },
+      select: { id: true, url: true, title: true, bodyText: true },
+      orderBy: { readAt: { sort: "desc", nulls: "last" } },
       take: 10,
     });
     expect(countMock).toHaveBeenCalledWith({ where });
@@ -216,5 +218,44 @@ describe("generateQuizzesForPendingArticles", () => {
     expect(createSpy).toHaveBeenCalledTimes(1);
     expect(result.generated).toBe(2);
     expect(result.remaining).toBe(1);
+  });
+
+  it("refetches the body of an article read without one and generates quizzes", async () => {
+    findManyMock.mockResolvedValue([
+      { id: "a1", url: "https://qiita.com/user/items/abc", title: "T1", bodyText: null },
+    ]);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("<body><main>Refetched body</main></body>", {
+        headers: { "content-type": "text/html" },
+      }))
+    );
+    const { llm, createSpy } = fakeLlm(VALID_JSON);
+
+    const result = await generateQuizzesForPendingArticles({ llm });
+
+    expect(updateMock).toHaveBeenCalledWith({
+      where: { id: "a1" },
+      data: { bodyText: "Refetched body" },
+    });
+    expect(createSpy.mock.calls[0][0].messages[0].content).toContain("Refetched body");
+    expect(result.generated).toBe(2);
+  });
+
+  it("counts a failed body refetch as an attempt without calling the LLM", async () => {
+    findManyMock.mockResolvedValue([
+      { id: "a1", url: "https://qiita.com/user/items/abc", title: "T1", bodyText: "" },
+    ]);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
+    const { llm, createSpy } = fakeLlm(VALID_JSON);
+
+    const result = await generateQuizzesForPendingArticles({ llm });
+
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(result.errors).toBe(1);
+    expect(updateMock).toHaveBeenCalledWith({
+      where: { id: "a1" },
+      data: { quizGenerationAttempts: { increment: 1 } },
+    });
   });
 });

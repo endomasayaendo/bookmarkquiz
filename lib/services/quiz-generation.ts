@@ -1,6 +1,7 @@
 import Groq from "groq-sdk";
 import { prisma } from "@/lib/prisma";
 import { parseQuizzes } from "@/lib/quiz-parser";
+import { fetchBodyText } from "@/lib/articles/fetch-body";
 
 // 既読化されたがまだクイズの無い記事から LLM で4択クイズを生成する業務ロジック。
 // cron ルートからこの関数を呼ぶだけにし、認証・HTTP の関心とは分離する。
@@ -81,16 +82,14 @@ export async function generateQuizzesForPendingArticles(
   const now = opts.now ?? Date.now;
   const startedAt = now();
 
-  // 対象は「既読・本文あり・まだクイズ未生成・失敗回数が上限未満」の記事すべて。
+  // 対象は「既読・まだクイズ未生成・失敗回数が上限未満」の記事すべて。
   // 時間窓で絞らないので、Cron の失敗や LLM の不調で生成できなかった記事も
   // 次回以降に拾い直される。quizzes: { none: {} } で重複生成を防ぐ。
-  // 空文字の本文は LLM に渡しても意味がないので除外する。
+  // 既読化の時点で本文を取得できなかった記事（null / 空文字）も含め、ここで取得し直す。
   // 失敗し続ける記事は試行回数の上限で外れるため、新しく読んだ記事を優先しても
   // 古い記事が永久に後回しにはならない。
   const where = {
     status: "done" as const,
-    bodyText: { not: null },
-    NOT: { bodyText: "" },
     quizzes: { none: {} },
     quizGenerationAttempts: { lt: MAX_GENERATION_ATTEMPTS },
   };
@@ -98,8 +97,9 @@ export async function generateQuizzesForPendingArticles(
   const [articles, total] = await Promise.all([
     prisma.article.findMany({
       where,
-      select: { id: true, title: true, bodyText: true },
-      orderBy: { readAt: "desc" },
+      select: { id: true, url: true, title: true, bodyText: true },
+      // readAt が null の古いデータは Postgres の desc で先頭に来るので末尾に回す。
+      orderBy: { readAt: { sort: "desc", nulls: "last" } },
       take: batchSize(),
     }),
     prisma.article.count({ where }),
@@ -118,8 +118,16 @@ export async function generateQuizzesForPendingArticles(
   for (const article of articles) {
     if (now() - startedAt > TIME_BUDGET_MS) break;
     try {
+      let bodyText = article.bodyText;
+      if (!bodyText) {
+        // 取得に失敗した場合は他の生成失敗と同じく試行回数に数える。
+        bodyText = await fetchBodyText(article.url);
+        if (!bodyText) throw new Error(`Empty body text: ${article.url}`);
+        await prisma.article.update({ where: { id: article.id }, data: { bodyText } });
+      }
+
       // LLM 入力トークン量を抑えるため本文は先頭 8000 文字までに制限。
-      const prompt = QUIZ_PROMPT(article.title, article.bodyText!.slice(0, 8000));
+      const prompt = QUIZ_PROMPT(article.title, bodyText.slice(0, 8000));
       const completion = await llm.chat.completions.create({
         model: "llama-3.3-70b-versatile",
         messages: [{ role: "user", content: prompt }],
