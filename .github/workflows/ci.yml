@@ -70,6 +70,12 @@ jobs:
       # Prisma Client は生成物が gitignore されているので CI で生成する
       - run: npx prisma generate
 
+      # マイグレーションを適用し、schema.prisma と差分がないことを確認する。
+      # schema.prisma だけ変えてマイグレーションを作り忘れた PR をここで落とす。
+      - run: npx prisma migrate deploy
+
+      - run: npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+
       - run: npx playwright install --with-deps chromium
 
       - run: npx playwright test

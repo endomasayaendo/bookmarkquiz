@@ -159,9 +159,11 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
 ```bash
-npx prisma db push
+DATABASE_URL=<Direct connection の URL> npx prisma migrate deploy
 npm run dev
 ```
+
+マイグレーションは Transaction pooler では動かないため、Supabase の **Direct connection**（または Session pooler）の URL を使います。
 
 ---
 
@@ -176,6 +178,21 @@ E2E は本番 DB を汚さないよう、**Docker のローカル test 用 Postg
 `npm run test:e2e` がコンテナ起動 → スキーマ投入 → テスト実行までを行います。後片付けは `npm run db:test:down`。
 ログインは開発限定の Dev Login を使うため、E2E に GitHub アカウントは不要です。
 CI（GitHub Actions）でも Postgres サービス上で同じ E2E が走ります。
+
+---
+
+## DBマイグレーション
+
+スキーマ変更は Prisma Migrate で管理します（`prisma/migrations/`）。
+
+1. `prisma/schema.prisma` を編集する
+2. `npm run db:migrate -- --name <変更内容>` でローカル DB にマイグレーションを作成・適用する（要 Docker）
+3. 生成された `prisma/migrations/<日時>_<変更内容>/migration.sql` を schema と一緒にコミットする
+
+main にマージすると、デプロイ時に `prisma migrate deploy` が本番 DB へ自動適用されます（GitHub Secrets の `DIRECT_DATABASE_URL` を使用）。
+マイグレーションは新しいコードより先に適用されるので、**カラムの削除やリネームなど旧コードが動かなくなる変更は、
+「コードから参照を外すデプロイ」→「カラムを消すマイグレーション」の2段階に分けてください**。
+CI ではマイグレーション適用後に schema.prisma との差分を検査し、マイグレーションの作り忘れを検出します。
 
 ---
 
